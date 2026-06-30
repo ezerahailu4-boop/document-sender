@@ -29,7 +29,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "A short reason for the correction is required for the audit trail" }, { status: 400 });
   }
 
-  const nextValues: Record<(typeof EDITABLE_FIELDS)[number], unknown> = {
+  const nextValues: {
+    senderName: string;
+    senderOrg: string | null;
+    subject: string;
+    receivedDate: Date;
+  } = {
     senderName: senderName.trim(),
     senderOrg: senderOrg?.trim() || null,
     subject: subject.trim(),
