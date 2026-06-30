@@ -6,34 +6,40 @@ import { redirect } from "next/navigation";
 import { RefNumber } from "@/components/ui/ref-number";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { SearchBar } from "./search-bar";
+import { ArchiveToggle } from "./archive-toggle";
+import { DocumentRowActions } from "./document-row-actions";
 import Link from "next/link";
-import { FileStack, Clock, CheckCircle2, Inbox, AlertTriangle } from "lucide-react";
+import { FileStack, Clock, CheckCircle2, Inbox, AlertTriangle, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Prisma } from "@prisma/client";
 
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; archived?: string }>;
 }) {
   const user = await getCurrentUser();
   if (user.role !== "REGISTRY_STAFF" && user.role !== "ADMIN") redirect("/inbox");
 
-  const { q, page: pageParam } = await searchParams;
+  const { q, page: pageParam, archived } = await searchParams;
   const query = (q ?? "").trim();
+  const showArchived = archived === "1";
   const page = Math.max(1, Number(pageParam) || 1);
   const PAGE_SIZE = 25;
 
-  const where: Prisma.DocumentWhereInput = query
-    ? {
-        OR: [
-          { referenceNumber: { contains: query, mode: "insensitive" } },
-          { senderName: { contains: query, mode: "insensitive" } },
-          { senderOrg: { contains: query, mode: "insensitive" } },
-          { subject: { contains: query, mode: "insensitive" } },
-        ],
-      }
-    : {};
+  const where: Prisma.DocumentWhereInput = {
+    ...(showArchived ? {} : { status: { not: "ARCHIVED" } }),
+    ...(query
+      ? {
+          OR: [
+            { referenceNumber: { contains: query, mode: "insensitive" } },
+            { senderName: { contains: query, mode: "insensitive" } },
+            { senderOrg: { contains: query, mode: "insensitive" } },
+            { subject: { contains: query, mode: "insensitive" } },
+          ],
+        }
+      : {}),
+  };
 
   const [documents, totalCount, counts] = await Promise.all([
     prisma.document.findMany({
@@ -54,10 +60,8 @@ export default async function DashboardPage({
   ]);
 
   const countFor = (s: string) => counts.find((c) => c.status === s)?._count.status ?? 0;
-  const totalDocuments = counts.reduce((sum, c) => sum + c._count.status, 0);
+  const totalActive = counts.filter((c) => c.status !== "ARCHIVED").reduce((sum, c) => sum + c._count.status, 0);
 
-  // Overdue is computed across the whole table (not just this page), since
-  // it's a small enough query and matters more than raw counts.
   const overdueCandidates = await prisma.documentRoute.findMany({
     where: { status: { in: ["PENDING", "OPENED"] } },
     select: { receivedAt: true, status: true },
@@ -65,13 +69,27 @@ export default async function DashboardPage({
   const overdueCount = overdueCandidates.filter((r) => isOverdue(r.receivedAt, r.status)).length;
 
   const stats = [
-    { label: "Total Documents", value: totalDocuments, icon: FileStack, color: "text-navy" },
+    { label: "Active Documents", value: totalActive, icon: FileStack, color: "text-navy" },
     { label: "Pending", value: countFor("PENDING"), icon: Inbox, color: "text-status-pending" },
     { label: "In Progress", value: countFor("IN_PROGRESS"), icon: Clock, color: "text-status-progress" },
     { label: "Completed", value: countFor("COMPLETED"), icon: CheckCircle2, color: "text-status-completed" },
   ];
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
+  const exportParams = new URLSearchParams({
+    ...(query ? { q: query } : {}),
+    ...(showArchived ? { archived: "1" } : {}),
+  });
+
+  function pageHref(p: number) {
+    const params = new URLSearchParams({
+      ...(query ? { q: query } : {}),
+      ...(showArchived ? { archived: "1" } : {}),
+      page: String(p),
+    });
+    return `/dashboard?${params.toString()}`;
+  }
 
   return (
     <>
@@ -81,8 +99,8 @@ export default async function DashboardPage({
         userName={user.fullName}
         userRole={ROLE_LABELS[user.role]}
       />
-      <main className="flex-1 overflow-y-auto p-6">
-        <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-5">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-5 md:gap-4">
           {stats.map((s) => (
             <div key={s.label} className="rounded-lg border border-rule bg-paper-raised p-4 shadow-sm">
               <div className="mb-2 flex items-center justify-between">
@@ -108,11 +126,20 @@ export default async function DashboardPage({
           </div>
         </div>
 
-        <div className="mb-4">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <SearchBar defaultValue={query} />
+          <div className="flex items-center gap-3">
+            <ArchiveToggle showArchived={showArchived} />
+            <a
+              href={`/api/documents/export?${exportParams.toString()}`}
+              className="inline-flex h-10 items-center gap-2 rounded-md border border-rule bg-paper-raised px-3 text-sm font-medium text-ink-soft hover:bg-paper"
+            >
+              <Download size={14} /> Export CSV
+            </a>
+          </div>
         </div>
 
-        <div className="overflow-hidden rounded-lg border border-rule bg-paper-raised shadow-sm">
+        <div className="overflow-x-auto rounded-lg border border-rule bg-paper-raised shadow-sm">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-rule bg-paper text-left text-xs uppercase tracking-wide text-ink-soft">
@@ -122,6 +149,7 @@ export default async function DashboardPage({
                 <th className="px-4 py-3 font-medium">Currently At</th>
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium">Days Open</th>
+                <th className="px-4 py-3 font-medium"></th>
               </tr>
             </thead>
             <tbody>
@@ -149,12 +177,15 @@ export default async function DashboardPage({
                         {overdue && " ⚠"}
                       </span>
                     </td>
+                    <td className="px-4 py-3 text-right">
+                      <DocumentRowActions documentId={doc.id} status={doc.status} />
+                    </td>
                   </tr>
                 );
               })}
               {documents.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-ink-soft">
+                  <td colSpan={7} className="px-4 py-10 text-center text-ink-soft">
                     {query ? `No documents match "${query}".` : "No documents registered yet."}
                   </td>
                 </tr>
@@ -168,18 +199,12 @@ export default async function DashboardPage({
             <p>Page {page} of {totalPages} ({totalCount} document{totalCount === 1 ? "" : "s"})</p>
             <div className="flex gap-2">
               {page > 1 && (
-                <Link
-                  href={`/dashboard?${new URLSearchParams({ ...(query ? { q: query } : {}), page: String(page - 1) })}`}
-                  className="rounded-md border border-rule px-3 py-1.5 hover:bg-paper"
-                >
+                <Link href={pageHref(page - 1)} className="rounded-md border border-rule px-3 py-1.5 hover:bg-paper">
                   Previous
                 </Link>
               )}
               {page < totalPages && (
-                <Link
-                  href={`/dashboard?${new URLSearchParams({ ...(query ? { q: query } : {}), page: String(page + 1) })}`}
-                  className="rounded-md border border-rule px-3 py-1.5 hover:bg-paper"
-                >
+                <Link href={pageHref(page + 1)} className="rounded-md border border-rule px-3 py-1.5 hover:bg-paper">
                   Next
                 </Link>
               )}

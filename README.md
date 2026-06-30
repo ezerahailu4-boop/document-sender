@@ -101,3 +101,18 @@ use.
   document's sender, subject, or received date from its detail page. A
   reason is required and every correction is recorded in the audit
   trail as a diff (old value → new value).
+- **Mobile navigation**: the sidebar collapses into a slide-over drawer
+  below the `md` breakpoint, opened from a hamburger button in the
+  Topbar — full navigation works on phones, not just desktop.
+- **Return / reject**: a department can send a document back to
+  whoever routed it to them (with a required reason), distinct from
+  forwarding it onward. Recorded as a `RETURNED` audit event.
+- **Archiving**: completed documents can be archived from the Master
+  Ledger to keep it uncluttered. Archived items are hidden by default;
+  toggle "Show archived" to bring them back, or restore one
+  individually.
+- **CSV export**: the Master Ledger has an Export CSV button that
+  respects the current search query and archive filter.
+- **Seed script**: `npm run seed` creates a starter set of departments
+  (including one flagged as the GM's office) so a fresh install isn't
+  a blank slate.

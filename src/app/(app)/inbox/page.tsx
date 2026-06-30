@@ -92,6 +92,7 @@ export default async function InboxPage() {
                     status={route.status}
                     filePath={route.document.scannedFilePath}
                     departments={departments.filter((d) => d.id !== user.departmentId)}
+                    canReturn={!!route.fromDeptId}
                   />
                 </div>
               );
