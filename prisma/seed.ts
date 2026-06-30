@@ -5,9 +5,12 @@
  *
  * Usage: npx tsx prisma/seed.ts
  */
+import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({ connectionString: process.env.DIRECT_URL ?? process.env.DATABASE_URL });
+const prisma = new PrismaClient({ adapter });
 
 const DEPARTMENTS = [
   { name: "General Manager's Office", code: "GM", isGmOffice: true },
