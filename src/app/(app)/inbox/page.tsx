@@ -1,12 +1,13 @@
 import { getCurrentUser } from "../actions";
 import { Topbar } from "@/components/layout/topbar";
-import { ROLE_LABELS, ROUTE_STATUS_CONFIG, daysOpen } from "@/lib/status";
+import { ROLE_LABELS, ROUTE_STATUS_CONFIG, daysOpen, isOverdue, SLA_DAYS } from "@/lib/status";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { RefNumber } from "@/components/ui/ref-number";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { InboxRowActions } from "./inbox-row-actions";
-import { Inbox as InboxIcon } from "lucide-react";
+import { Inbox as InboxIcon, AlertTriangle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default async function InboxPage() {
   const user = await getCurrentUser();
@@ -23,6 +24,14 @@ export default async function InboxPage() {
     },
     include: { document: true, fromDept: true },
     orderBy: { receivedAt: "asc" },
+  });
+
+  // Surface overdue items first so the most urgent work is never buried.
+  const sorted = [...routes].sort((a, b) => {
+    const aOver = isOverdue(a.receivedAt, a.status);
+    const bOver = isOverdue(b.receivedAt, b.status);
+    if (aOver === bOver) return 0;
+    return aOver ? -1 : 1;
   });
 
   return (
@@ -42,18 +51,27 @@ export default async function InboxPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {routes.map((route) => {
+            {sorted.map((route) => {
               const cfg = ROUTE_STATUS_CONFIG[route.status];
+              const overdue = isOverdue(route.receivedAt, route.status);
               return (
                 <div
                   key={route.id}
-                  className="rounded-lg border border-rule bg-paper-raised p-4 shadow-sm"
+                  className={cn(
+                    "rounded-lg border bg-paper-raised p-4 shadow-sm",
+                    overdue ? "border-red-300" : "border-rule"
+                  )}
                 >
                   <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <div className="mb-1 flex items-center gap-2">
                         <RefNumber value={route.document.referenceNumber} />
                         <StatusBadge label={cfg.label} textClass={cfg.text} bgClass={cfg.bg} />
+                        {overdue && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700">
+                            <AlertTriangle size={12} /> Overdue
+                          </span>
+                        )}
                       </div>
                       <p className="font-medium text-ink">{route.document.subject}</p>
                       <p className="text-sm text-ink-soft">
@@ -61,8 +79,11 @@ export default async function InboxPage() {
                         {route.fromDept ? ` · forwarded from ${route.fromDept.name}` : " · via Registry"}
                       </p>
                     </div>
-                    <div className="text-right text-sm text-ink-soft">
-                      <p>{daysOpen(route.receivedAt, null)} day(s) here</p>
+                    <div className="text-right text-sm">
+                      <p className={overdue ? "font-medium text-red-700" : "text-ink-soft"}>
+                        {daysOpen(route.receivedAt, null)} day(s) here
+                      </p>
+                      {overdue && <p className="text-xs text-ink-soft">SLA is {SLA_DAYS} day(s)</p>}
                     </div>
                   </div>
                   <InboxRowActions

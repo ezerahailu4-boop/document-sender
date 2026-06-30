@@ -92,3 +92,12 @@ use.
 - Email notifications use Resend — set `RESEND_API_KEY` and
   `EMAIL_FROM`. Notifications still work in-app even if email isn't
   configured; failures are recorded but never block routing.
+- **Search**: the Master Ledger has a debounced search bar matching
+  reference number, sender name/org, and subject (case-insensitive).
+- **SLA / overdue tracking**: any document sitting in one department's
+  inbox for `NEXT_PUBLIC_SLA_DAYS` (default 3) or more is flagged
+  Overdue on both the Master Ledger and the Inbox, sorted to the top.
+- **Corrections**: Registry staff and Admins can correct a registered
+  document's sender, subject, or received date from its detail page. A
+  reason is required and every correction is recorded in the audit
+  trail as a diff (old value → new value).

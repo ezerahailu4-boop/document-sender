@@ -20,8 +20,19 @@ export const ROLE_LABELS = {
   ADMIN: "Administrator",
 } as const;
 
+// Number of days a document may sit in a single department's inbox before
+// it's flagged overdue on the dashboard and inbox. Configurable via env so
+// it can be tuned per-institution without a code change.
+export const SLA_DAYS = Number(process.env.NEXT_PUBLIC_SLA_DAYS || 3);
+
 export function daysOpen(receivedDate: Date, completedAt: Date | null): number {
   const end = completedAt ?? new Date();
   const ms = end.getTime() - new Date(receivedDate).getTime();
   return Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)));
+}
+
+export function isOverdue(receivedAt: Date, status: string): boolean {
+  if (status === "COMPLETED" || status === "FORWARDED") return false;
+  const days = daysOpen(receivedAt, null);
+  return days >= SLA_DAYS;
 }

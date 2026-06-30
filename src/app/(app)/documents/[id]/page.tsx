@@ -6,6 +6,7 @@ import { notFound, redirect } from "next/navigation";
 import { RefNumber } from "@/components/ui/ref-number";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { ViewFileButton } from "./view-file-button";
+import { EditDocumentPanel } from "./edit-document-panel";
 import { ArrowRight } from "lucide-react";
 import { format } from "date-fns";
 
@@ -71,6 +72,11 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
                 <dd className="text-ink">{document.subject}</dd>
               </div>
             </dl>
+            {isRegistryOrAdmin && (
+              <div className="mt-4 border-t border-rule pt-4">
+                <EditDocumentPanel document={document} />
+              </div>
+            )}
           </div>
 
           <div className="rounded-lg border border-rule bg-paper-raised p-5 shadow-sm">
