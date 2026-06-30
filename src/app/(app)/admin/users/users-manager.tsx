@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/form";
 import { ROLE_LABELS } from "@/lib/status";
-import { Plus } from "lucide-react";
+import { Plus, Search, Pencil, Check, X } from "lucide-react";
 
 type Dept = { id: string; name: string };
 type Usr = {
@@ -18,8 +18,138 @@ type Usr = {
 
 const ROLE_OPTIONS = Object.entries(ROLE_LABELS) as [keyof typeof ROLE_LABELS, string][];
 
+function initials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase())
+    .join("");
+}
+
+function UserAvatar({ name }: { name: string }) {
+  return (
+    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-navy-soft text-sm font-semibold text-navy">
+      {initials(name)}
+    </div>
+  );
+}
+
+function EditableRow({
+  u,
+  departments,
+  onSaved,
+}: {
+  u: Usr;
+  departments: Dept[];
+  onSaved: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [role, setRole] = useState(u.role);
+  const [departmentId, setDepartmentId] = useState(u.department?.id ?? "");
+  const [loading, setLoading] = useState(false);
+  const needsDept = role === "DEPARTMENT_USER" || role === "DEPARTMENT_HEAD" || role === "GM";
+
+  async function save() {
+    setLoading(true);
+    await fetch(`/api/admin/users/${u.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role, departmentId: needsDept ? departmentId || null : null }),
+    });
+    setLoading(false);
+    setEditing(false);
+    onSaved();
+  }
+
+  async function toggleActive() {
+    await fetch(`/api/admin/users/${u.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isActive: !u.isActive }),
+    });
+    onSaved();
+  }
+
+  if (editing) {
+    return (
+      <tr className="border-b border-rule bg-paper-raised last:border-0">
+        <td className="px-4 py-3" colSpan={2}>
+          <div className="flex items-center gap-3">
+            <UserAvatar name={u.fullName} />
+            <div>
+              <p className="font-medium text-ink">{u.fullName}</p>
+              <p className="text-xs text-ink-soft">{u.email}</p>
+            </div>
+          </div>
+        </td>
+        <td className="px-4 py-3">
+          <Select value={role} onChange={(e) => setRole(e.target.value as keyof typeof ROLE_LABELS)} className="h-9">
+            {ROLE_OPTIONS.map(([val, label]) => (
+              <option key={val} value={val}>{label}</option>
+            ))}
+          </Select>
+        </td>
+        <td className="px-4 py-3">
+          {needsDept ? (
+            <Select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} className="h-9">
+              <option value="">Select…</option>
+              {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </Select>
+          ) : (
+            <span className="text-ink-soft">—</span>
+          )}
+        </td>
+        <td className="px-4 py-3 text-ink-soft">{u.isActive ? "Active" : "Inactive"}</td>
+        <td className="px-4 py-3 text-right">
+          <div className="flex justify-end gap-2">
+            <button onClick={save} disabled={loading} className="text-status-completed hover:opacity-70">
+              <Check size={16} />
+            </button>
+            <button onClick={() => setEditing(false)} className="text-ink-soft hover:text-ink">
+              <X size={16} />
+            </button>
+          </div>
+        </td>
+      </tr>
+    );
+  }
+
+  return (
+    <tr className="border-b border-rule last:border-0 hover:bg-paper">
+      <td className="px-4 py-3" colSpan={2}>
+        <div className="flex items-center gap-3">
+          <UserAvatar name={u.fullName} />
+          <div>
+            <p className="font-medium text-ink">{u.fullName}</p>
+            <p className="text-xs text-ink-soft">{u.email}</p>
+          </div>
+        </div>
+      </td>
+      <td className="px-4 py-3 text-ink-soft">{ROLE_LABELS[u.role]}</td>
+      <td className="px-4 py-3 text-ink-soft">{u.department?.name ?? "—"}</td>
+      <td className="px-4 py-3">
+        <span className={u.isActive ? "text-status-completed" : "text-ink-soft"}>
+          {u.isActive ? "Active" : "Inactive"}
+        </span>
+      </td>
+      <td className="px-4 py-3 text-right">
+        <div className="flex justify-end gap-3">
+          <button onClick={() => setEditing(true)} className="text-ink-soft hover:text-ink" title="Edit role/department">
+            <Pencil size={14} />
+          </button>
+          <button onClick={toggleActive} className="text-xs text-ink-soft underline hover:text-ink">
+            {u.isActive ? "Deactivate" : "Activate"}
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
 export function UsersManager({ initialUsers, departments }: { initialUsers: Usr[]; departments: Dept[] }) {
   const [users, setUsers] = useState(initialUsers);
+  const [search, setSearch] = useState("");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -52,21 +182,20 @@ export function UsersManager({ initialUsers, departments }: { initialUsers: Usr[
     await refresh();
   }
 
-  async function toggleActive(id: string, current: boolean) {
-    await fetch(`/api/admin/users/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isActive: !current }),
-    });
-    await refresh();
-  }
+  const filtered = users.filter((u) =>
+    !search ||
+    u.fullName.toLowerCase().includes(search.toLowerCase()) ||
+    u.email.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
       <form onSubmit={createUser} className="rounded-lg border border-rule bg-paper-raised p-5 shadow-sm">
-        <h2 className="mb-4 text-sm font-semibold text-ink">Add a user</h2>
-        {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
-        <div className="mb-3 grid grid-cols-2 gap-3">
+        <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-ink">
+          <Plus size={16} className="text-stamp" /> Add a user
+        </h2>
+        {error && <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+        <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <Label htmlFor="fullName">Full name</Label>
             <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
@@ -76,7 +205,7 @@ export function UsersManager({ initialUsers, departments }: { initialUsers: Usr[
             <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           </div>
         </div>
-        <div className="mb-3 grid grid-cols-2 gap-3">
+        <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <Label htmlFor="password">Temporary password</Label>
             <Input id="password" type="text" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
@@ -106,12 +235,21 @@ export function UsersManager({ initialUsers, departments }: { initialUsers: Usr[
         </Button>
       </form>
 
-      <div className="overflow-hidden rounded-lg border border-rule bg-paper-raised shadow-sm">
+      <div className="relative max-w-sm">
+        <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft" size={16} />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search users…"
+          className="h-10 w-full rounded-md border border-rule bg-paper-raised pl-9 pr-3 text-sm text-ink placeholder:text-ink-soft/60 focus:outline-none focus:ring-2 focus:ring-stamp/40"
+        />
+      </div>
+
+      <div className="overflow-x-auto rounded-lg border border-rule bg-paper-raised shadow-sm">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-rule bg-paper text-left text-xs uppercase tracking-wide text-ink-soft">
-              <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Email</th>
+              <th className="px-4 py-3" colSpan={2}>User</th>
               <th className="px-4 py-3">Role</th>
               <th className="px-4 py-3">Department</th>
               <th className="px-4 py-3">Status</th>
@@ -119,27 +257,14 @@ export function UsersManager({ initialUsers, departments }: { initialUsers: Usr[
             </tr>
           </thead>
           <tbody>
-            {users.map((u) => (
-              <tr key={u.id} className="border-b border-rule last:border-0">
-                <td className="px-4 py-3 text-ink">{u.fullName}</td>
-                <td className="px-4 py-3 text-ink-soft">{u.email}</td>
-                <td className="px-4 py-3 text-ink-soft">{ROLE_LABELS[u.role]}</td>
-                <td className="px-4 py-3 text-ink-soft">{u.department?.name ?? "—"}</td>
-                <td className="px-4 py-3">
-                  <span className={u.isActive ? "text-status-completed" : "text-ink-soft"}>
-                    {u.isActive ? "Active" : "Inactive"}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <button
-                    onClick={() => toggleActive(u.id, u.isActive)}
-                    className="text-xs text-ink-soft underline hover:text-ink"
-                  >
-                    {u.isActive ? "Deactivate" : "Activate"}
-                  </button>
-                </td>
-              </tr>
+            {filtered.map((u) => (
+              <EditableRow key={u.id} u={u} departments={departments} onSaved={refresh} />
             ))}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={6} className="px-4 py-10 text-center text-ink-soft">No users match your search.</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

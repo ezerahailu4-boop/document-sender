@@ -71,7 +71,7 @@ export default function LoginPage() {
             />
           </div>
 
-          <div className="mb-6">
+          <div className="mb-2">
             <Label htmlFor="password">Password</Label>
             <Input
               id="password"
@@ -81,6 +81,12 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
             />
+          </div>
+
+          <div className="mb-6 text-right">
+            <a href="/forgot-password" className="text-xs text-ink-soft hover:text-stamp">
+              Forgot password?
+            </a>
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>

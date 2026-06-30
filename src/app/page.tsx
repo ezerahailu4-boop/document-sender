@@ -11,8 +11,7 @@ export default async function RootPage() {
   const profile = await prisma.user.findUnique({ where: { authId: user.id } });
   if (!profile) redirect("/login?error=no-profile");
 
-  if (profile.role === "REGISTRY_STAFF" || profile.role === "ADMIN") {
-    redirect("/dashboard");
-  }
+  if (profile.role === "ADMIN") redirect("/admin");
+  if (profile.role === "REGISTRY_STAFF") redirect("/dashboard");
   redirect("/inbox");
 }

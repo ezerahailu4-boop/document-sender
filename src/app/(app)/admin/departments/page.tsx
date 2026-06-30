@@ -11,7 +11,9 @@ export default async function DepartmentsAdminPage() {
 
   const departments = await prisma.department.findMany({
     orderBy: { name: "asc" },
-    include: { _count: { select: { users: true } } },
+    include: {
+      _count: { select: { users: true, routesTo: true } },
+    },
   });
 
   return (
@@ -22,8 +24,8 @@ export default async function DepartmentsAdminPage() {
         userName={user.fullName}
         userRole={ROLE_LABELS[user.role]}
       />
-      <main className="flex-1 overflow-y-auto p-6">
-        <div className="mx-auto max-w-3xl">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <div className="mx-auto max-w-4xl">
           <DepartmentsManager initialDepartments={departments} />
         </div>
       </main>

@@ -12,6 +12,7 @@ import {
   Stamp,
   Building2,
   Users,
+  ClipboardList,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -23,8 +24,10 @@ const NAV = [
 ];
 
 const ADMIN_NAV = [
+  { href: "/admin", label: "Overview", icon: LayoutDashboard },
   { href: "/admin/departments", label: "Departments", icon: Building2 },
   { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/audit-log", label: "Audit Log", icon: ClipboardList },
 ];
 
 function NavLinks({ role, onNavigate }: { role: string; onNavigate?: () => void }) {
@@ -54,7 +57,7 @@ function NavLinks({ role, onNavigate }: { role: string; onNavigate?: () => void 
         <>
           <p className="mt-5 mb-1 px-3 text-xs font-semibold uppercase tracking-wide text-ink-soft">Admin</p>
           {ADMIN_NAV.map((item) => {
-            const active = pathname?.startsWith(item.href);
+            const active = item.href === "/admin" ? pathname === "/admin" : pathname?.startsWith(item.href);
             return (
               <Link
                 key={item.href}

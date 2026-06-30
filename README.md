@@ -116,3 +116,14 @@ use.
 - **Seed script**: `npm run seed` creates a starter set of departments
   (including one flagged as the GM's office) so a fresh install isn't
   a blank slate.
+- **Admin Overview** (`/admin`): system-wide stats, an overdue feed
+  across every department, and a recent-activity feed — the Admin's
+  home page.
+- **Audit Log** (`/admin/audit-log`): a paginated, system-wide table of
+  every audit event across every document (registrations, forwards,
+  returns, completions, corrections, archiving).
+- **Inline user management**: Admins can edit a user's role and
+  department directly from the Users table without leaving the page.
+- **Password reset**: a full "Forgot password?" → emailed link →
+  "Set a new password" flow via Supabase Auth, plus a "Change
+  password" panel in Settings for already-signed-in users.

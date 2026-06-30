@@ -25,10 +25,11 @@ export async function updateSession(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  const isAuthRoute = request.nextUrl.pathname.startsWith("/login");
+  const PUBLIC_ROUTES = ["/login", "/forgot-password", "/reset-password"];
+  const isPublicRoute = PUBLIC_ROUTES.some((r) => request.nextUrl.pathname.startsWith(r));
   const isPublicAsset = request.nextUrl.pathname.startsWith("/_next");
 
-  if (!user && !isAuthRoute && !isPublicAsset) {
+  if (!user && !isPublicRoute && !isPublicAsset) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
