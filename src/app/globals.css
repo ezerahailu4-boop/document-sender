@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+/*
+  Design system — "Registry Ledger"
+  ----------------------------------
+  Signature idea: this is a digital registry, so the visual language
+  borrows from physical ledgers and rubber stamps rather than generic
+  SaaS-dashboard blue. Reference numbers render in a monospaced,
+  letter-spaced "stamped" style; status uses a restrained set of
+  ledger-tab colors instead of a rainbow of badge colors.
+*/
+
+:root {
+  --color-paper: #F8F6F1;      /* warm off-white, ledger paper */
+  --color-paper-raised: #FFFFFF;
+  --color-ink: #1B2330;        /* near-black navy ink */
+  --color-ink-soft: #5B6472;   /* secondary text */
+  --color-rule: #E4DFD3;       /* hairline dividers, warm grey */
+  --color-stamp: #B5482A;      /* registry-stamp terracotta — primary accent */
+  --color-stamp-soft: #F1DFD6;
+  --color-navy: #1E3A5F;       /* department / structural accent */
+  --color-navy-soft: #E3EAF1;
+
+  --color-status-pending: #B7791E;
+  --color-status-pending-bg: #FBF0DD;
+  --color-status-progress: #1E3A5F;
+  --color-status-progress-bg: #E3EAF1;
+  --color-status-completed: #2F6F4E;
+  --color-status-completed-bg: #E2EFE7;
+  --color-status-archived: #5B6472;
+  --color-status-archived-bg: #ECEAE4;
+}
+
+@theme inline {
+  --color-paper: var(--color-paper);
+  --color-paper-raised: var(--color-paper-raised);
+  --color-ink: var(--color-ink);
+  --color-ink-soft: var(--color-ink-soft);
+  --color-rule: var(--color-rule);
+  --color-stamp: var(--color-stamp);
+  --color-stamp-soft: var(--color-stamp-soft);
+  --color-navy: var(--color-navy);
+  --color-navy-soft: var(--color-navy-soft);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+body {
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+.font-mono-tight {
+  font-family: var(--font-mono), monospace;
+  letter-spacing: 0.04em;
+}
+
+/* Reference-number "stamp" treatment used across the app */
+.ref-stamp {
+  font-family: var(--font-mono), monospace;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
