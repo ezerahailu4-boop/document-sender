@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input, Label } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Crown, Plus, Trash2, Building2, FileStack, Users as UsersIcon } from "lucide-react";
 
 type Dept = {
@@ -62,11 +63,11 @@ export function DepartmentsManager({ initialDepartments }: { initialDepartments:
 
   return (
     <div className="space-y-6">
-      <form onSubmit={createDept} className="rounded-lg border border-rule bg-paper-raised p-5 shadow-sm">
-        <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-ink">
-          <Plus size={16} className="text-stamp" /> Add a department
+      <form onSubmit={createDept} className="rounded-lg border border-border bg-card p-5 shadow-sm">
+        <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-foreground">
+          <Plus size={16} className="text-primary" /> Add a department
         </h2>
-        {error && <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+        {error && <p className="mb-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
         <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <Label htmlFor="dname">Name</Label>
@@ -77,8 +78,8 @@ export function DepartmentsManager({ initialDepartments }: { initialDepartments:
             <Input id="dcode" value={code} onChange={(e) => setCode(e.target.value)} placeholder="FIN" required maxLength={6} />
           </div>
         </div>
-        <label className="mb-4 flex items-center gap-2 text-sm text-ink-soft">
-          <input type="checkbox" checked={isGm} onChange={(e) => setIsGm(e.target.checked)} className="accent-stamp" />
+        <label className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
+          <input type="checkbox" checked={isGm} onChange={(e) => setIsGm(e.target.checked)} className="accent-primary" />
           This is the GM&apos;s office (every new document routes here first)
         </label>
         <Button type="submit" disabled={loading}>
@@ -88,35 +89,35 @@ export function DepartmentsManager({ initialDepartments }: { initialDepartments:
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {departments.map((d) => (
-          <div key={d.id} className="rounded-lg border border-rule bg-paper-raised p-4 shadow-sm">
+          <div key={d.id} className="rounded-lg border border-border bg-card p-4 shadow-sm">
             <div className="mb-3 flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-navy-soft text-navy">
+                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-secondary/15 text-secondary">
                   <Building2 size={18} />
                 </div>
                 <div>
-                  <p className="font-medium text-ink">{d.name}</p>
-                  <p className="font-mono-tight text-xs text-ink-soft">{d.code}</p>
+                  <p className="font-medium text-foreground">{d.name}</p>
+                  <p className="font-mono-tight text-xs text-muted-foreground">{d.code}</p>
                 </div>
               </div>
-              <button onClick={() => remove(d.id)} className="text-ink-soft hover:text-red-600" title="Delete">
+              <button onClick={() => remove(d.id)} className="text-muted-foreground hover:text-destructive" title="Delete">
                 <Trash2 size={14} />
               </button>
             </div>
 
-            <div className="mb-3 flex items-center gap-4 text-xs text-ink-soft">
+            <div className="mb-3 flex items-center gap-4 text-xs text-muted-foreground">
               <span className="flex items-center gap-1"><UsersIcon size={12} /> {d._count.users} user(s)</span>
               <span className="flex items-center gap-1"><FileStack size={12} /> {d._count.routesTo} document(s) handled</span>
             </div>
 
             {d.isGmOffice ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-stamp-soft px-2.5 py-1 text-xs font-medium text-stamp">
+              <span className="inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-primary">
                 <Crown size={12} /> GM Office
               </span>
             ) : (
               <button
                 onClick={() => setAsGm(d.id)}
-                className="rounded-full border border-rule px-2.5 py-1 text-xs text-ink-soft hover:border-stamp/40 hover:text-stamp"
+                className="rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground hover:border-primary/40 hover:text-primary"
               >
                 Set as GM office
               </button>
@@ -124,7 +125,7 @@ export function DepartmentsManager({ initialDepartments }: { initialDepartments:
           </div>
         ))}
         {departments.length === 0 && (
-          <p className="col-span-2 py-8 text-center text-sm text-ink-soft">No departments yet — add one above.</p>
+          <p className="col-span-2 py-8 text-center text-sm text-muted-foreground">No departments yet — add one above.</p>
         )}
       </div>
     </div>

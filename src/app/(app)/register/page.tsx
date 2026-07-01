@@ -24,7 +24,7 @@ export default async function RegisterPage() {
       <main className="flex-1 overflow-y-auto p-6">
         <div className="mx-auto max-w-2xl">
           {!gmDept && (
-            <div className="mb-4 rounded-md bg-status-pending-bg px-4 py-3 text-sm text-status-pending">
+            <div className="mb-4 rounded-md bg-warning/15 px-4 py-3 text-sm text-warning">
               No GM office is configured yet. An Admin needs to mark one department as the
               GM&apos;s office in Departments settings before documents can be registered.
             </div>

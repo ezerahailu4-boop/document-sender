@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input, Label } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Stamp } from "lucide-react";
 
 export default function LoginForm() {
@@ -32,21 +33,21 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-paper px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-stamp text-white">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-white">
             <Stamp size={24} />
           </div>
-          <h1 className="text-xl font-semibold text-ink">DocTrack</h1>
-          <p className="text-sm text-ink-soft">Document Tracking & Workflow System</p>
+          <h1 className="text-xl font-semibold text-foreground">DocTrack</h1>
+          <p className="text-sm text-muted-foreground">Document Tracking & Workflow System</p>
         </div>
         <form
           onSubmit={handleSubmit}
-          className="rounded-lg border border-rule bg-paper-raised p-6 shadow-sm"
+          className="rounded-lg border border-border bg-card p-6 shadow-sm"
         >
           {(error || urlError) && (
-            <div className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+            <div className="mb-4 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {error ||
                 (urlError === "no-profile"
                   ? "Your account hasn't been provisioned yet. Contact an administrator."
@@ -76,7 +77,7 @@ export default function LoginForm() {
             />
           </div>
           <div className="mb-6 text-right">
-            <a href="/forgot-password" className="text-xs text-ink-soft hover:text-stamp">
+            <a href="/forgot-password" className="text-xs text-muted-foreground hover:text-primary">
               Forgot password?
             </a>
           </div>
@@ -84,7 +85,7 @@ export default function LoginForm() {
             {loading ? "Signing in…" : "Sign in"}
           </Button>
         </form>
-        <p className="mt-4 text-center text-xs text-ink-soft">
+        <p className="mt-4 text-center text-xs text-muted-foreground">
           Accounts are provisioned by your Registry administrator.
         </p>
       </div>

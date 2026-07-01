@@ -44,7 +44,7 @@ function NavLinks({ role, onNavigate }: { role: string; onNavigate?: () => void 
             onClick={onNavigate}
             className={cn(
               "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-              active ? "bg-stamp-soft text-stamp" : "text-ink-soft hover:bg-ink/5 hover:text-ink"
+              active ? "bg-accent text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground"
             )}
           >
             <item.icon size={18} />
@@ -55,7 +55,7 @@ function NavLinks({ role, onNavigate }: { role: string; onNavigate?: () => void 
 
       {role === "ADMIN" && (
         <>
-          <p className="mt-5 mb-1 px-3 text-xs font-semibold uppercase tracking-wide text-ink-soft">Admin</p>
+          <p className="mt-5 mb-1 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Admin</p>
           {ADMIN_NAV.map((item) => {
             const active = item.href === "/admin" ? pathname === "/admin" : pathname?.startsWith(item.href);
             return (
@@ -65,7 +65,7 @@ function NavLinks({ role, onNavigate }: { role: string; onNavigate?: () => void 
                 onClick={onNavigate}
                 className={cn(
                   "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                  active ? "bg-stamp-soft text-stamp" : "text-ink-soft hover:bg-ink/5 hover:text-ink"
+                  active ? "bg-accent text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground"
                 )}
               >
                 <item.icon size={18} />
@@ -81,18 +81,18 @@ function NavLinks({ role, onNavigate }: { role: string; onNavigate?: () => void 
 
 function SidebarFooter({ unreadCount, onNavigate }: { unreadCount: number; onNavigate?: () => void }) {
   return (
-    <div className="border-t border-rule px-3 py-4">
+    <div className="border-t border-border px-3 py-4">
       <Link
         href="/notifications"
         onClick={onNavigate}
-        className="flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium text-ink-soft hover:bg-ink/5 hover:text-ink"
+        className="flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
       >
         <span className="flex items-center gap-3">
           <Bell size={18} />
           Notifications
         </span>
         {unreadCount > 0 && (
-          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-stamp px-1 text-xs font-semibold text-white">
+          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-xs font-semibold text-white">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
@@ -100,7 +100,7 @@ function SidebarFooter({ unreadCount, onNavigate }: { unreadCount: number; onNav
       <Link
         href="/settings"
         onClick={onNavigate}
-        className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-ink-soft hover:bg-ink/5 hover:text-ink"
+        className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
       >
         <Settings size={18} />
         Settings
@@ -111,18 +111,18 @@ function SidebarFooter({ unreadCount, onNavigate }: { unreadCount: number; onNav
 
 function BrandHeader({ onClose }: { onClose?: () => void }) {
   return (
-    <div className="flex items-center justify-between border-b border-rule px-5 py-5">
+    <div className="flex items-center justify-between border-b border-border px-5 py-5">
       <div className="flex items-center gap-2">
-        <div className="flex h-9 w-9 items-center justify-center rounded-md bg-stamp text-white">
+        <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-white">
           <Stamp size={18} />
         </div>
         <div>
-          <p className="text-sm font-semibold leading-none text-ink">DocTrack</p>
-          <p className="text-xs text-ink-soft">Registry & Workflow</p>
+          <p className="text-sm font-semibold leading-none text-foreground">DocTrack</p>
+          <p className="text-xs text-muted-foreground">Registry & Workflow</p>
         </div>
       </div>
       {onClose && (
-        <button onClick={onClose} className="text-ink-soft hover:text-ink md:hidden" aria-label="Close menu">
+        <button onClick={onClose} className="text-muted-foreground hover:text-foreground md:hidden" aria-label="Close menu">
           <X size={20} />
         </button>
       )}
@@ -133,7 +133,7 @@ function BrandHeader({ onClose }: { onClose?: () => void }) {
 // Desktop: fixed sidebar, always visible at md+.
 export function Sidebar({ role, unreadCount = 0 }: { role: string; unreadCount?: number }) {
   return (
-    <aside className="hidden w-64 flex-col border-r border-rule bg-paper-raised md:flex">
+    <aside className="hidden w-64 flex-col border-r border-border bg-card md:flex">
       <BrandHeader />
       <NavLinks role={role} />
       <SidebarFooter unreadCount={unreadCount} />
@@ -162,8 +162,8 @@ export function MobileSidebar({
 
   return (
     <div className="fixed inset-0 z-50 md:hidden">
-      <div className="absolute inset-0 bg-ink/40" onClick={onClose} />
-      <aside className="absolute inset-y-0 left-0 flex w-72 flex-col bg-paper-raised shadow-xl">
+      <div className="absolute inset-0 bg-foreground/40" onClick={onClose} />
+      <aside className="absolute inset-y-0 left-0 flex w-72 flex-col bg-card shadow-xl">
         <BrandHeader onClose={onClose} />
         <NavLinks role={role} onNavigate={onClose} />
         <SidebarFooter unreadCount={unreadCount} onNavigate={onClose} />

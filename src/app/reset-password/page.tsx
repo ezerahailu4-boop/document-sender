@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input, Label } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Stamp } from "lucide-react";
 
 export default function ResetPasswordPage() {
@@ -44,18 +45,18 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-paper px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-stamp text-white">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-white">
             <Stamp size={24} />
           </div>
-          <h1 className="text-xl font-semibold text-ink">Set a new password</h1>
+          <h1 className="text-xl font-semibold text-foreground">Set a new password</h1>
         </div>
 
-        <form onSubmit={handleSubmit} className="rounded-lg border border-rule bg-paper-raised p-6 shadow-sm">
+        <form onSubmit={handleSubmit} className="rounded-lg border border-border bg-card p-6 shadow-sm">
           {error && (
-            <div className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+            <div className="mb-4 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>
           )}
           <div className="mb-4">
             <Label htmlFor="password">New password</Label>

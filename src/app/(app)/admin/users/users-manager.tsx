@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input, Label, Select } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select-native";
 import { ROLE_LABELS } from "@/lib/status";
 import { Plus, Search, Pencil, Check, X } from "lucide-react";
 
@@ -29,7 +31,7 @@ function initials(name: string) {
 
 function UserAvatar({ name }: { name: string }) {
   return (
-    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-navy-soft text-sm font-semibold text-navy">
+    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary/15 text-sm font-semibold text-secondary">
       {initials(name)}
     </div>
   );
@@ -73,13 +75,13 @@ function EditableRow({
 
   if (editing) {
     return (
-      <tr className="border-b border-rule bg-paper-raised last:border-0">
+      <tr className="border-b border-border bg-card last:border-0">
         <td className="px-4 py-3" colSpan={2}>
           <div className="flex items-center gap-3">
             <UserAvatar name={u.fullName} />
             <div>
-              <p className="font-medium text-ink">{u.fullName}</p>
-              <p className="text-xs text-ink-soft">{u.email}</p>
+              <p className="font-medium text-foreground">{u.fullName}</p>
+              <p className="text-xs text-muted-foreground">{u.email}</p>
             </div>
           </div>
         </td>
@@ -97,16 +99,16 @@ function EditableRow({
               {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
             </Select>
           ) : (
-            <span className="text-ink-soft">—</span>
+            <span className="text-muted-foreground">—</span>
           )}
         </td>
-        <td className="px-4 py-3 text-ink-soft">{u.isActive ? "Active" : "Inactive"}</td>
+        <td className="px-4 py-3 text-muted-foreground">{u.isActive ? "Active" : "Inactive"}</td>
         <td className="px-4 py-3 text-right">
           <div className="flex justify-end gap-2">
-            <button onClick={save} disabled={loading} className="text-status-completed hover:opacity-70">
+            <button onClick={save} disabled={loading} className="text-success hover:opacity-70">
               <Check size={16} />
             </button>
-            <button onClick={() => setEditing(false)} className="text-ink-soft hover:text-ink">
+            <button onClick={() => setEditing(false)} className="text-muted-foreground hover:text-foreground">
               <X size={16} />
             </button>
           </div>
@@ -116,29 +118,29 @@ function EditableRow({
   }
 
   return (
-    <tr className="border-b border-rule last:border-0 hover:bg-paper">
+    <tr className="border-b border-border last:border-0 hover:bg-background">
       <td className="px-4 py-3" colSpan={2}>
         <div className="flex items-center gap-3">
           <UserAvatar name={u.fullName} />
           <div>
-            <p className="font-medium text-ink">{u.fullName}</p>
-            <p className="text-xs text-ink-soft">{u.email}</p>
+            <p className="font-medium text-foreground">{u.fullName}</p>
+            <p className="text-xs text-muted-foreground">{u.email}</p>
           </div>
         </div>
       </td>
-      <td className="px-4 py-3 text-ink-soft">{ROLE_LABELS[u.role]}</td>
-      <td className="px-4 py-3 text-ink-soft">{u.department?.name ?? "—"}</td>
+      <td className="px-4 py-3 text-muted-foreground">{ROLE_LABELS[u.role]}</td>
+      <td className="px-4 py-3 text-muted-foreground">{u.department?.name ?? "—"}</td>
       <td className="px-4 py-3">
-        <span className={u.isActive ? "text-status-completed" : "text-ink-soft"}>
+        <span className={u.isActive ? "text-success" : "text-muted-foreground"}>
           {u.isActive ? "Active" : "Inactive"}
         </span>
       </td>
       <td className="px-4 py-3 text-right">
         <div className="flex justify-end gap-3">
-          <button onClick={() => setEditing(true)} className="text-ink-soft hover:text-ink" title="Edit role/department">
+          <button onClick={() => setEditing(true)} className="text-muted-foreground hover:text-foreground" title="Edit role/department">
             <Pencil size={14} />
           </button>
-          <button onClick={toggleActive} className="text-xs text-ink-soft underline hover:text-ink">
+          <button onClick={toggleActive} className="text-xs text-muted-foreground underline hover:text-foreground">
             {u.isActive ? "Deactivate" : "Activate"}
           </button>
         </div>
@@ -190,11 +192,11 @@ export function UsersManager({ initialUsers, departments }: { initialUsers: Usr[
 
   return (
     <div className="space-y-6">
-      <form onSubmit={createUser} className="rounded-lg border border-rule bg-paper-raised p-5 shadow-sm">
-        <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-ink">
-          <Plus size={16} className="text-stamp" /> Add a user
+      <form onSubmit={createUser} className="rounded-lg border border-border bg-card p-5 shadow-sm">
+        <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-foreground">
+          <Plus size={16} className="text-primary" /> Add a user
         </h2>
-        {error && <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+        {error && <p className="mb-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
         <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <Label htmlFor="fullName">Full name</Label>
@@ -236,19 +238,19 @@ export function UsersManager({ initialUsers, departments }: { initialUsers: Usr[
       </form>
 
       <div className="relative max-w-sm">
-        <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft" size={16} />
+        <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search users…"
-          className="h-10 w-full rounded-md border border-rule bg-paper-raised pl-9 pr-3 text-sm text-ink placeholder:text-ink-soft/60 focus:outline-none focus:ring-2 focus:ring-stamp/40"
+          className="h-10 w-full rounded-md border border-border bg-card pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/40"
         />
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-rule bg-paper-raised shadow-sm">
+      <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-sm">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-rule bg-paper text-left text-xs uppercase tracking-wide text-ink-soft">
+            <tr className="border-b border-border bg-background text-left text-xs uppercase tracking-wide text-muted-foreground">
               <th className="px-4 py-3" colSpan={2}>User</th>
               <th className="px-4 py-3">Role</th>
               <th className="px-4 py-3">Department</th>
@@ -262,7 +264,7 @@ export function UsersManager({ initialUsers, departments }: { initialUsers: Usr[
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-10 text-center text-ink-soft">No users match your search.</td>
+                <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">No users match your search.</td>
               </tr>
             )}
           </tbody>

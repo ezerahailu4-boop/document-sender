@@ -3,16 +3,18 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input, Label, Textarea } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { RefNumber } from "@/components/ui/ref-number";
 import { UploadCloud, FileText, CheckCircle2, Image as ImageIcon, FileType2 } from "lucide-react";
 import { ACCEPTED_FILE_EXTENSIONS, ACCEPTED_FILE_LABEL } from "@/lib/file-type";
 
 function FilePreviewIcon({ name }: { name: string }) {
   const ext = name.split(".").pop()?.toLowerCase() ?? "";
-  if (["jpg", "jpeg", "png", "webp"].includes(ext)) return <ImageIcon className="text-stamp" size={28} />;
-  if (["doc", "docx"].includes(ext)) return <FileType2 className="text-stamp" size={28} />;
-  return <FileText className="text-stamp" size={28} />;
+  if (["jpg", "jpeg", "png", "webp"].includes(ext)) return <ImageIcon className="text-primary" size={28} />;
+  if (["doc", "docx"].includes(ext)) return <FileType2 className="text-primary" size={28} />;
+  return <FileText className="text-primary" size={28} />;
 }
 
 export function RegisterForm({ gmDeptName }: { gmDeptName: string | null }) {
@@ -58,9 +60,9 @@ export function RegisterForm({ gmDeptName }: { gmDeptName: string | null }) {
 
   if (success) {
     return (
-      <div className="flex flex-col items-center rounded-lg border border-rule bg-paper-raised px-8 py-12 text-center shadow-sm">
-        <CheckCircle2 className="mb-4 text-status-completed" size={40} />
-        <p className="mb-1 text-sm text-ink-soft">Document registered and routed to {gmDeptName}</p>
+      <div className="flex flex-col items-center rounded-lg border border-border bg-card px-8 py-12 text-center shadow-sm">
+        <CheckCircle2 className="mb-4 text-success" size={40} />
+        <p className="mb-1 text-sm text-muted-foreground">Document registered and routed to {gmDeptName}</p>
         <RefNumber value={success.referenceNumber} className="mb-6 text-base" />
         <div className="flex gap-3">
           <Button variant="secondary" onClick={() => router.push("/dashboard")}>
@@ -77,10 +79,10 @@ export function RegisterForm({ gmDeptName }: { gmDeptName: string | null }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-5 rounded-lg border border-rule bg-paper-raised p-6 shadow-sm"
+      className="space-y-5 rounded-lg border border-border bg-card p-6 shadow-sm"
     >
       {error && (
-        <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+        <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>
       )}
 
       <div>
@@ -108,19 +110,19 @@ export function RegisterForm({ gmDeptName }: { gmDeptName: string | null }) {
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="flex w-full flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed border-rule bg-paper px-4 py-8 text-center transition-colors hover:border-stamp/40"
+          className="flex w-full flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed border-border bg-background px-4 py-8 text-center transition-colors hover:border-primary/40"
         >
           {file ? (
             <>
               <FilePreviewIcon name={file.name} />
-              <span className="text-sm font-medium text-ink">{file.name}</span>
-              <span className="text-xs text-ink-soft">{(file.size / 1024 / 1024).toFixed(2)} MB — click to change</span>
+              <span className="text-sm font-medium text-foreground">{file.name}</span>
+              <span className="text-xs text-muted-foreground">{(file.size / 1024 / 1024).toFixed(2)} MB — click to change</span>
             </>
           ) : (
             <>
-              <UploadCloud className="text-ink-soft" size={28} />
-              <span className="text-sm font-medium text-ink">Click to upload the document</span>
-              <span className="text-xs text-ink-soft">{ACCEPTED_FILE_LABEL}, up to 25MB</span>
+              <UploadCloud className="text-muted-foreground" size={28} />
+              <span className="text-sm font-medium text-foreground">Click to upload the document</span>
+              <span className="text-xs text-muted-foreground">{ACCEPTED_FILE_LABEL}, up to 25MB</span>
             </>
           )}
         </button>
@@ -133,10 +135,10 @@ export function RegisterForm({ gmDeptName }: { gmDeptName: string | null }) {
         />
       </div>
 
-      <div className="flex items-center justify-between border-t border-rule pt-4">
-        <p className="text-xs text-ink-soft">
+      <div className="flex items-center justify-between border-t border-border pt-4">
+        <p className="text-xs text-muted-foreground">
           A reference number is generated automatically on submit and this document
-          will be routed to <span className="font-medium text-ink">{gmDeptName ?? "the GM's office"}</span>.
+          will be routed to <span className="font-medium text-foreground">{gmDeptName ?? "the GM's office"}</span>.
         </p>
         <Button type="submit" disabled={loading || !gmDeptName}>
           {loading ? "Registering…" : "Register & route"}

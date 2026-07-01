@@ -24,7 +24,7 @@ export function AppShell({
 
   return (
     <MobileNavContext.Provider value={{ open: () => setMobileOpen(true) }}>
-      <div className="flex min-h-screen bg-paper">
+      <div className="flex min-h-screen bg-background">
         <Sidebar role={role} unreadCount={unreadCount} />
         <MobileSidebar role={role} unreadCount={unreadCount} open={mobileOpen} onClose={() => setMobileOpen(false)} />
         <div className="flex flex-1 flex-col">{children}</div>

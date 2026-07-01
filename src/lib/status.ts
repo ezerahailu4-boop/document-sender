@@ -1,15 +1,15 @@
 export const DOCUMENT_STATUS_CONFIG = {
-  PENDING: { label: "Pending", text: "text-status-pending", bg: "bg-status-pending-bg" },
-  IN_PROGRESS: { label: "In Progress", text: "text-status-progress", bg: "bg-status-progress-bg" },
-  COMPLETED: { label: "Completed", text: "text-status-completed", bg: "bg-status-completed-bg" },
-  ARCHIVED: { label: "Archived", text: "text-status-archived", bg: "bg-status-archived-bg" },
+  PENDING: { label: "Pending", text: "text-warning", bg: "bg-warning/15" },
+  IN_PROGRESS: { label: "In Progress", text: "text-secondary", bg: "bg-secondary/15" },
+  COMPLETED: { label: "Completed", text: "text-success", bg: "bg-success/15" },
+  ARCHIVED: { label: "Archived", text: "text-muted-foreground", bg: "bg-muted" },
 } as const;
 
 export const ROUTE_STATUS_CONFIG = {
-  PENDING: { label: "Pending", text: "text-status-pending", bg: "bg-status-pending-bg" },
-  OPENED: { label: "Opened", text: "text-status-progress", bg: "bg-status-progress-bg" },
-  FORWARDED: { label: "Forwarded", text: "text-navy", bg: "bg-navy-soft" },
-  COMPLETED: { label: "Completed", text: "text-status-completed", bg: "bg-status-completed-bg" },
+  PENDING: { label: "Pending", text: "text-warning", bg: "bg-warning/15" },
+  OPENED: { label: "Opened", text: "text-secondary", bg: "bg-secondary/15" },
+  FORWARDED: { label: "Forwarded", text: "text-secondary", bg: "bg-secondary/15" },
+  COMPLETED: { label: "Completed", text: "text-success", bg: "bg-success/15" },
 } as const;
 
 export const ROLE_LABELS = {

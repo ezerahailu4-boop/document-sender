@@ -1,52 +1,171 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
 /*
-  Design system — "Registry Ledger"
-  ----------------------------------
-  Signature idea: this is a digital registry, so the visual language
-  borrows from physical ledgers and rubber stamps rather than generic
-  SaaS-dashboard blue. Reference numbers render in a monospaced,
-  letter-spaced "stamped" style; status uses a restrained set of
-  ledger-tab colors instead of a rainbow of badge colors.
+  Design system — shadcn/ui semantic tokens, with a custom "Registry
+  Ledger" accent (terracotta stamp color) layered on top. Full light +
+  dark mode support via next-themes toggling the .dark class on <html>.
 */
 
 :root {
-  --color-paper: #F8F6F1;      /* warm off-white, ledger paper */
-  --color-paper-raised: #FFFFFF;
-  --color-ink: #1B2330;        /* near-black navy ink */
-  --color-ink-soft: #5B6472;   /* secondary text */
-  --color-rule: #E4DFD3;       /* hairline dividers, warm grey */
-  --color-stamp: #B5482A;      /* registry-stamp terracotta — primary accent */
-  --color-stamp-soft: #F1DFD6;
-  --color-navy: #1E3A5F;       /* department / structural accent */
-  --color-navy-soft: #E3EAF1;
+  --radius: 0.625rem;
 
-  --color-status-pending: #B7791E;
-  --color-status-pending-bg: #FBF0DD;
-  --color-status-progress: #1E3A5F;
-  --color-status-progress-bg: #E3EAF1;
-  --color-status-completed: #2F6F4E;
-  --color-status-completed-bg: #E2EFE7;
-  --color-status-archived: #5B6472;
-  --color-status-archived-bg: #ECEAE4;
+  --background: hsl(40 30% 97%);
+  --foreground: hsl(222 30% 15%);
+
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(222 30% 15%);
+
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(222 30% 15%);
+
+  --primary: hsl(14 56% 43%);
+  --primary-foreground: hsl(0 0% 100%);
+
+  --secondary: hsl(213 40% 25%);
+  --secondary-foreground: hsl(0 0% 100%);
+
+  --muted: hsl(40 20% 94%);
+  --muted-foreground: hsl(215 15% 42%);
+
+  --accent: hsl(14 45% 92%);
+  --accent-foreground: hsl(14 56% 30%);
+
+  --destructive: hsl(0 72% 51%);
+  --destructive-foreground: hsl(0 0% 100%);
+
+  --border: hsl(40 15% 88%);
+  --input: hsl(40 15% 88%);
+  --ring: hsl(14 56% 43%);
+
+  --success: hsl(145 50% 35%);
+  --success-foreground: hsl(0 0% 100%);
+  --warning: hsl(38 75% 42%);
+  --warning-foreground: hsl(0 0% 100%);
+
+  --chart-1: hsl(14 56% 43%);
+  --chart-2: hsl(213 40% 35%);
+  --chart-3: hsl(145 50% 35%);
+  --chart-4: hsl(38 75% 42%);
+  --chart-5: hsl(0 72% 51%);
+
+  --sidebar: hsl(0 0% 100%);
+  --sidebar-foreground: hsl(222 30% 15%);
+  --sidebar-primary: hsl(14 56% 43%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(14 45% 92%);
+  --sidebar-accent-foreground: hsl(14 56% 30%);
+  --sidebar-border: hsl(40 15% 88%);
+  --sidebar-ring: hsl(14 56% 43%);
+}
+
+.dark {
+  --background: hsl(222 22% 8%);
+  --foreground: hsl(40 15% 92%);
+
+  --card: hsl(222 20% 11%);
+  --card-foreground: hsl(40 15% 92%);
+
+  --popover: hsl(222 20% 11%);
+  --popover-foreground: hsl(40 15% 92%);
+
+  --primary: hsl(14 65% 55%);
+  --primary-foreground: hsl(222 22% 8%);
+
+  --secondary: hsl(213 30% 22%);
+  --secondary-foreground: hsl(40 15% 92%);
+
+  --muted: hsl(222 16% 16%);
+  --muted-foreground: hsl(215 12% 62%);
+
+  --accent: hsl(14 40% 20%);
+  --accent-foreground: hsl(14 65% 75%);
+
+  --destructive: hsl(0 68% 55%);
+  --destructive-foreground: hsl(0 0% 100%);
+
+  --border: hsl(222 15% 20%);
+  --input: hsl(222 15% 20%);
+  --ring: hsl(14 65% 55%);
+
+  --success: hsl(145 45% 45%);
+  --success-foreground: hsl(222 22% 8%);
+  --warning: hsl(38 70% 52%);
+  --warning-foreground: hsl(222 22% 8%);
+
+  --chart-1: hsl(14 65% 55%);
+  --chart-2: hsl(213 45% 60%);
+  --chart-3: hsl(145 45% 45%);
+  --chart-4: hsl(38 70% 52%);
+  --chart-5: hsl(0 68% 55%);
+
+  --sidebar: hsl(222 24% 6%);
+  --sidebar-foreground: hsl(40 15% 92%);
+  --sidebar-primary: hsl(14 65% 55%);
+  --sidebar-primary-foreground: hsl(222 22% 8%);
+  --sidebar-accent: hsl(14 40% 20%);
+  --sidebar-accent-foreground: hsl(14 65% 75%);
+  --sidebar-border: hsl(222 15% 18%);
+  --sidebar-ring: hsl(14 65% 55%);
 }
 
 @theme inline {
-  --color-paper: var(--color-paper);
-  --color-paper-raised: var(--color-paper-raised);
-  --color-ink: var(--color-ink);
-  --color-ink-soft: var(--color-ink-soft);
-  --color-rule: var(--color-rule);
-  --color-stamp: var(--color-stamp);
-  --color-stamp-soft: var(--color-stamp-soft);
-  --color-navy: var(--color-navy);
-  --color-navy-soft: var(--color-navy-soft);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
 }
 
-body {
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    border-color: var(--border);
+    outline-color: var(--ring);
+  }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  }
 }
 
 .font-mono-tight {

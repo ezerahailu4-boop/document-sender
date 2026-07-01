@@ -4,7 +4,7 @@ export function RefNumber({ value, className }: { value: string; className?: str
   return (
     <span
       className={cn(
-        "ref-stamp inline-block rounded border border-stamp/30 bg-stamp-soft px-2 py-0.5 text-stamp",
+        "ref-stamp inline-block rounded border border-primary/30 bg-accent px-2 py-0.5 text-primary",
         className
       )}
     >

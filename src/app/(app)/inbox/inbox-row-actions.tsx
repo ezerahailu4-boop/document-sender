@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Select, Textarea } from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
+import { Select } from "@/components/ui/select-native";
 import { Eye, Send, CheckCircle, Undo2 } from "lucide-react";
 
 type Dept = { id: string; name: string };
@@ -85,8 +86,8 @@ export function InboxRowActions({
   }
 
   return (
-    <div className="border-t border-rule pt-3">
-      {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
+    <div className="border-t border-border pt-3">
+      {error && <p className="mb-2 text-sm text-destructive">{error}</p>}
 
       {mode === "idle" && (
         <div className="flex flex-wrap gap-2">
@@ -101,7 +102,7 @@ export function InboxRowActions({
               <Undo2 size={14} /> Return
             </Button>
           )}
-          <Button size="sm" variant="primary" onClick={complete} disabled={loading}>
+          <Button size="sm" variant="default" onClick={complete} disabled={loading}>
             <CheckCircle size={14} /> Mark Completed
           </Button>
         </div>
@@ -141,7 +142,7 @@ export function InboxRowActions({
             onChange={(e) => setComment(e.target.value)}
           />
           <div className="flex gap-2">
-            <Button size="sm" variant="danger" onClick={submitReturn} disabled={loading}>
+            <Button size="sm" variant="destructive" onClick={submitReturn} disabled={loading}>
               {loading ? "Returning…" : "Confirm return"}
             </Button>
             <Button size="sm" variant="ghost" onClick={() => { setMode("idle"); setError(null); }}>
@@ -151,7 +152,7 @@ export function InboxRowActions({
         </div>
       )}
 
-      <p className="mt-1 text-xs text-ink-soft">Status: {status}</p>
+      <p className="mt-1 text-xs text-muted-foreground">Status: {status}</p>
     </div>
   );
 }

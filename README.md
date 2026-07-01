@@ -136,3 +136,15 @@ use.
 - **Password reset**: a full "Forgot password?" → emailed link →
   "Set a new password" flow via Supabase Auth, plus a "Change
   password" panel in Settings for already-signed-in users.
+- **Design system**: rebuilt on shadcn/ui — Button, Input, Label,
+  Textarea, Select, Card, Badge, Table, DropdownMenu, Separator, and
+  Skeleton primitives, all theme-aware via CSS variables. The registry
+  "stamp" terracotta accent from the original design carries through
+  as the `primary` token; the GM/department navy carries through as
+  `secondary`.
+- **Dark mode**: full light/dark/system theme support via
+  `next-themes`, toggled from the sun/moon icon in the Topbar next to
+  the user menu. Every page, table, badge, and form uses semantic
+  color tokens (`bg-card`, `text-muted-foreground`, `bg-destructive/10`,
+  etc.) rather than hardcoded colors, so nothing was missed when
+  switching themes.

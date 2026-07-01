@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input, Label, Textarea } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Pencil } from "lucide-react";
 
 type DocumentFields = {
@@ -53,9 +55,9 @@ export function EditDocumentPanel({ document }: { document: DocumentFields }) {
   }
 
   return (
-    <div className="rounded-lg border border-stamp/30 bg-stamp-soft/40 p-4">
-      <p className="mb-3 text-sm font-medium text-ink">Correct document details</p>
-      {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+    <div className="rounded-lg border border-primary/30 bg-accent/40 p-4">
+      <p className="mb-3 text-sm font-medium text-foreground">Correct document details</p>
+      {error && <p className="mb-3 text-sm text-destructive">{error}</p>}
       <form onSubmit={submit} className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <div>

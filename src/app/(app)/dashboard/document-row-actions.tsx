@@ -26,7 +26,7 @@ export function DocumentRowActions({ documentId, status }: { documentId: string;
       onClick={toggleArchive}
       disabled={loading}
       title={status === "ARCHIVED" ? "Restore from archive" : "Archive"}
-      className="text-ink-soft hover:text-ink disabled:opacity-50"
+      className="text-muted-foreground hover:text-foreground disabled:opacity-50"
     >
       {status === "ARCHIVED" ? <ArchiveRestore size={16} /> : <Archive size={16} />}
     </button>

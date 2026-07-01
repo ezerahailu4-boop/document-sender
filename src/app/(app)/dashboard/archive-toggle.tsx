@@ -19,7 +19,7 @@ export function ArchiveToggle({ showArchived }: { showArchived: boolean }) {
   }
 
   return (
-    <label className="flex h-10 items-center gap-2 rounded-md border border-rule bg-paper-raised px-3 text-sm text-ink-soft">
+    <label className="flex h-10 items-center gap-2 rounded-md border border-border bg-card px-3 text-sm text-muted-foreground">
       <input type="checkbox" checked={showArchived} onChange={toggle} />
       Show archived
     </label>

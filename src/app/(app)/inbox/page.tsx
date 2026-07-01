@@ -44,10 +44,10 @@ export default async function InboxPage() {
       />
       <main className="flex-1 overflow-y-auto p-6">
         {routes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-rule bg-paper-raised py-16 text-center">
-            <InboxIcon className="mb-3 text-ink-soft" size={32} />
-            <p className="text-sm font-medium text-ink">Inbox is clear</p>
-            <p className="text-sm text-ink-soft">Nothing is currently waiting on your department.</p>
+          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card py-16 text-center">
+            <InboxIcon className="mb-3 text-muted-foreground" size={32} />
+            <p className="text-sm font-medium text-foreground">Inbox is clear</p>
+            <p className="text-sm text-muted-foreground">Nothing is currently waiting on your department.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -58,8 +58,8 @@ export default async function InboxPage() {
                 <div
                   key={route.id}
                   className={cn(
-                    "rounded-lg border bg-paper-raised p-4 shadow-sm",
-                    overdue ? "border-red-300" : "border-rule"
+                    "rounded-lg border bg-card p-4 shadow-sm",
+                    overdue ? "border-destructive/40" : "border-border"
                   )}
                 >
                   <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
@@ -68,22 +68,22 @@ export default async function InboxPage() {
                         <RefNumber value={route.document.referenceNumber} />
                         <StatusBadge label={cfg.label} textClass={cfg.text} bgClass={cfg.bg} />
                         {overdue && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2.5 py-1 text-xs font-medium text-destructive">
                             <AlertTriangle size={12} /> Overdue
                           </span>
                         )}
                       </div>
-                      <p className="font-medium text-ink">{route.document.subject}</p>
-                      <p className="text-sm text-ink-soft">
+                      <p className="font-medium text-foreground">{route.document.subject}</p>
+                      <p className="text-sm text-muted-foreground">
                         From {route.document.senderName}
                         {route.fromDept ? ` · forwarded from ${route.fromDept.name}` : " · via Registry"}
                       </p>
                     </div>
                     <div className="text-right text-sm">
-                      <p className={overdue ? "font-medium text-red-700" : "text-ink-soft"}>
+                      <p className={overdue ? "font-medium text-destructive" : "text-muted-foreground"}>
                         {daysOpen(route.receivedAt, null)} day(s) here
                       </p>
-                      {overdue && <p className="text-xs text-ink-soft">SLA is {SLA_DAYS} day(s)</p>}
+                      {overdue && <p className="text-xs text-muted-foreground">SLA is {SLA_DAYS} day(s)</p>}
                     </div>
                   </div>
                   <InboxRowActions

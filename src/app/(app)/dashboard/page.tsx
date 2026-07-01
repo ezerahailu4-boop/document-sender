@@ -69,10 +69,10 @@ export default async function DashboardPage({
   const overdueCount = overdueCandidates.filter((r) => isOverdue(r.receivedAt, r.status)).length;
 
   const stats = [
-    { label: "Active Documents", value: totalActive, icon: FileStack, color: "text-navy" },
-    { label: "Pending", value: countFor("PENDING"), icon: Inbox, color: "text-status-pending" },
-    { label: "In Progress", value: countFor("IN_PROGRESS"), icon: Clock, color: "text-status-progress" },
-    { label: "Completed", value: countFor("COMPLETED"), icon: CheckCircle2, color: "text-status-completed" },
+    { label: "Active Documents", value: totalActive, icon: FileStack, color: "text-secondary" },
+    { label: "Pending", value: countFor("PENDING"), icon: Inbox, color: "text-warning" },
+    { label: "In Progress", value: countFor("IN_PROGRESS"), icon: Clock, color: "text-secondary" },
+    { label: "Completed", value: countFor("COMPLETED"), icon: CheckCircle2, color: "text-success" },
   ];
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
@@ -102,25 +102,25 @@ export default async function DashboardPage({
       <main className="flex-1 overflow-y-auto p-4 md:p-6">
         <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-5 md:gap-4">
           {stats.map((s) => (
-            <div key={s.label} className="rounded-lg border border-rule bg-paper-raised p-4 shadow-sm">
+            <div key={s.label} className="rounded-lg border border-border bg-card p-4 shadow-sm">
               <div className="mb-2 flex items-center justify-between">
-                <p className="text-sm text-ink-soft">{s.label}</p>
+                <p className="text-sm text-muted-foreground">{s.label}</p>
                 <s.icon className={s.color} size={18} />
               </div>
-              <p className="text-2xl font-semibold text-ink">{s.value}</p>
+              <p className="text-2xl font-semibold text-foreground">{s.value}</p>
             </div>
           ))}
           <div className={cn(
             "rounded-lg border p-4 shadow-sm",
-            overdueCount > 0 ? "border-red-200 bg-red-50" : "border-rule bg-paper-raised"
+            overdueCount > 0 ? "border-destructive/30 bg-destructive/10" : "border-border bg-card"
           )}>
             <div className="mb-2 flex items-center justify-between">
-              <p className={cn("text-sm", overdueCount > 0 ? "text-red-700" : "text-ink-soft")}>
+              <p className={cn("text-sm", overdueCount > 0 ? "text-destructive" : "text-muted-foreground")}>
                 Overdue ({SLA_DAYS}+ days)
               </p>
-              <AlertTriangle className={overdueCount > 0 ? "text-red-600" : "text-ink-soft"} size={18} />
+              <AlertTriangle className={overdueCount > 0 ? "text-destructive" : "text-muted-foreground"} size={18} />
             </div>
-            <p className={cn("text-2xl font-semibold", overdueCount > 0 ? "text-red-700" : "text-ink")}>
+            <p className={cn("text-2xl font-semibold", overdueCount > 0 ? "text-destructive" : "text-foreground")}>
               {overdueCount}
             </p>
           </div>
@@ -132,17 +132,17 @@ export default async function DashboardPage({
             <ArchiveToggle showArchived={showArchived} />
             <a
               href={`/api/documents/export?${exportParams.toString()}`}
-              className="inline-flex h-10 items-center gap-2 rounded-md border border-rule bg-paper-raised px-3 text-sm font-medium text-ink-soft hover:bg-paper"
+              className="inline-flex h-10 items-center gap-2 rounded-md border border-border bg-card px-3 text-sm font-medium text-muted-foreground hover:bg-background"
             >
               <Download size={14} /> Export CSV
             </a>
           </div>
         </div>
 
-        <div className="overflow-x-auto rounded-lg border border-rule bg-paper-raised shadow-sm">
+        <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-sm">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-rule bg-paper text-left text-xs uppercase tracking-wide text-ink-soft">
+              <tr className="border-b border-border bg-background text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <th className="px-4 py-3 font-medium">Reference No.</th>
                 <th className="px-4 py-3 font-medium">Sender</th>
                 <th className="px-4 py-3 font-medium">Subject</th>
@@ -159,20 +159,20 @@ export default async function DashboardPage({
                 const currentDept = currentRoute?.toDept.name ?? "—";
                 const overdue = currentRoute ? isOverdue(currentRoute.receivedAt, currentRoute.status) : false;
                 return (
-                  <tr key={doc.id} className={cn("border-b border-rule last:border-0 hover:bg-paper", overdue && "bg-red-50/60")}>
+                  <tr key={doc.id} className={cn("border-b border-border last:border-0 hover:bg-background", overdue && "bg-destructive/10/60")}>
                     <td className="px-4 py-3">
                       <Link href={`/documents/${doc.id}`}>
                         <RefNumber value={doc.referenceNumber} />
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-ink">{doc.senderName}</td>
-                    <td className="max-w-xs truncate px-4 py-3 text-ink-soft">{doc.subject}</td>
-                    <td className="px-4 py-3 text-ink">{currentDept}</td>
+                    <td className="px-4 py-3 text-foreground">{doc.senderName}</td>
+                    <td className="max-w-xs truncate px-4 py-3 text-muted-foreground">{doc.subject}</td>
+                    <td className="px-4 py-3 text-foreground">{currentDept}</td>
                     <td className="px-4 py-3">
                       <StatusBadge label={cfg.label} textClass={cfg.text} bgClass={cfg.bg} />
                     </td>
                     <td className="px-4 py-3">
-                      <span className={overdue ? "font-medium text-red-700" : "text-ink-soft"}>
+                      <span className={overdue ? "font-medium text-destructive" : "text-muted-foreground"}>
                         {daysOpen(doc.receivedDate, doc.completedAt)} day(s)
                         {overdue && " ⚠"}
                       </span>
@@ -185,7 +185,7 @@ export default async function DashboardPage({
               })}
               {documents.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-ink-soft">
+                  <td colSpan={7} className="px-4 py-10 text-center text-muted-foreground">
                     {query ? `No documents match "${query}".` : "No documents registered yet."}
                   </td>
                 </tr>
@@ -195,16 +195,16 @@ export default async function DashboardPage({
         </div>
 
         {totalPages > 1 && (
-          <div className="mt-4 flex items-center justify-between text-sm text-ink-soft">
+          <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
             <p>Page {page} of {totalPages} ({totalCount} document{totalCount === 1 ? "" : "s"})</p>
             <div className="flex gap-2">
               {page > 1 && (
-                <Link href={pageHref(page - 1)} className="rounded-md border border-rule px-3 py-1.5 hover:bg-paper">
+                <Link href={pageHref(page - 1)} className="rounded-md border border-border px-3 py-1.5 hover:bg-background">
                   Previous
                 </Link>
               )}
               {page < totalPages && (
-                <Link href={pageHref(page + 1)} className="rounded-md border border-rule px-3 py-1.5 hover:bg-paper">
+                <Link href={pageHref(page + 1)} className="rounded-md border border-border px-3 py-1.5 hover:bg-background">
                   Next
                 </Link>
               )}

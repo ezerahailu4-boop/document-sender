@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input, Label } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { CheckCircle2 } from "lucide-react";
 
 export function ChangePasswordPanel() {
@@ -43,11 +44,11 @@ export function ChangePasswordPanel() {
   }
 
   return (
-    <form onSubmit={submit} className="rounded-lg border border-rule bg-paper-raised p-5 shadow-sm">
-      <h2 className="mb-4 text-sm font-semibold text-ink">Change password</h2>
-      {error && <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+    <form onSubmit={submit} className="rounded-lg border border-border bg-card p-5 shadow-sm">
+      <h2 className="mb-4 text-sm font-semibold text-foreground">Change password</h2>
+      {error && <p className="mb-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
       {success && (
-        <p className="mb-3 flex items-center gap-2 rounded-md bg-status-completed-bg px-3 py-2 text-sm text-status-completed">
+        <p className="mb-3 flex items-center gap-2 rounded-md bg-success/15 px-3 py-2 text-sm text-success">
           <CheckCircle2 size={14} /> Password updated.
         </p>
       )}

@@ -27,17 +27,17 @@ export function SearchBar({ defaultValue }: { defaultValue: string }) {
 
   return (
     <div className="relative max-w-md">
-      <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft" size={16} />
+      <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
       <input
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder="Search by reference number, sender, or subject…"
-        className="h-10 w-full rounded-md border border-rule bg-paper-raised pl-9 pr-9 text-sm text-ink placeholder:text-ink-soft/60 focus:outline-none focus:ring-2 focus:ring-stamp/40 focus:border-stamp/50"
+        className="h-10 w-full rounded-md border border-border bg-card pl-9 pr-9 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/50"
       />
       {value && (
         <button
           onClick={() => setValue("")}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft hover:text-ink"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
         >
           <X size={16} />
         </button>
