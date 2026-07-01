@@ -52,6 +52,15 @@ npx prisma generate
 npx prisma db push
 ```
 
+> **Note on Prisma 7:** this project uses Prisma 7, which moved connection
+> URLs out of `prisma/schema.prisma` and into `prisma.config.ts`. Do
+> **not** add `url` / `directUrl` back into the `datasource` block in
+> `schema.prisma` — Prisma 7 hard-errors on that and it will break the
+> Vercel build. `DATABASE_URL` and `DIRECT_URL` still come from your
+> `.env` file / Vercel environment variables exactly as before; they're
+> just read by `prisma.config.ts` (for the CLI) and `src/lib/prisma.ts`
+> (for the app's runtime client via the `PrismaPg` adapter) instead.
+
 ### 3. Create the first Admin
 
 Easiest path: create a user directly in Supabase Auth (Dashboard ->
