@@ -5,7 +5,15 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/form";
 import { RefNumber } from "@/components/ui/ref-number";
-import { UploadCloud, FileText, CheckCircle2 } from "lucide-react";
+import { UploadCloud, FileText, CheckCircle2, Image as ImageIcon, FileType2 } from "lucide-react";
+import { ACCEPTED_FILE_EXTENSIONS, ACCEPTED_FILE_LABEL } from "@/lib/file-type";
+
+function FilePreviewIcon({ name }: { name: string }) {
+  const ext = name.split(".").pop()?.toLowerCase() ?? "";
+  if (["jpg", "jpeg", "png", "webp"].includes(ext)) return <ImageIcon className="text-stamp" size={28} />;
+  if (["doc", "docx"].includes(ext)) return <FileType2 className="text-stamp" size={28} />;
+  return <FileText className="text-stamp" size={28} />;
+}
 
 export function RegisterForm({ gmDeptName }: { gmDeptName: string | null }) {
   const router = useRouter();
@@ -20,7 +28,7 @@ export function RegisterForm({ gmDeptName }: { gmDeptName: string | null }) {
     setError(null);
 
     if (!file) {
-      setError("Attach the scanned PDF before submitting.");
+      setError("Attach the scanned document before submitting.");
       return;
     }
 
@@ -96,7 +104,7 @@ export function RegisterForm({ gmDeptName }: { gmDeptName: string | null }) {
       </div>
 
       <div>
-        <Label>Scanned document (PDF) *</Label>
+        <Label>Document file *</Label>
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
@@ -104,22 +112,22 @@ export function RegisterForm({ gmDeptName }: { gmDeptName: string | null }) {
         >
           {file ? (
             <>
-              <FileText className="text-stamp" size={28} />
+              <FilePreviewIcon name={file.name} />
               <span className="text-sm font-medium text-ink">{file.name}</span>
               <span className="text-xs text-ink-soft">{(file.size / 1024 / 1024).toFixed(2)} MB — click to change</span>
             </>
           ) : (
             <>
               <UploadCloud className="text-ink-soft" size={28} />
-              <span className="text-sm font-medium text-ink">Click to upload the scanned PDF</span>
-              <span className="text-xs text-ink-soft">PDF only, up to 25MB</span>
+              <span className="text-sm font-medium text-ink">Click to upload the document</span>
+              <span className="text-xs text-ink-soft">{ACCEPTED_FILE_LABEL}, up to 25MB</span>
             </>
           )}
         </button>
         <input
           ref={fileInputRef}
           type="file"
-          accept="application/pdf"
+          accept={ACCEPTED_FILE_EXTENSIONS}
           className="hidden"
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
         />

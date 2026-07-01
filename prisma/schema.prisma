@@ -107,6 +107,7 @@ model Document {
   scannedFilePath  String // path within Supabase Storage bucket
   fileSizeBytes    Int?
   originalFileName String?
+  mimeType         String? // detected via magic bytes, not trusted from the client
   status           DocumentStatus @default(PENDING)
 
   registeredById   String

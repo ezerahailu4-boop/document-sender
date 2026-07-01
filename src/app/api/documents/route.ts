@@ -3,6 +3,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { generateReferenceNumber } from "@/lib/reference-number";
 import { notifyRoute } from "@/lib/notify";
+import { detectFileType } from "@/lib/file-type";
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -36,16 +37,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
-  // --- File validation (defense in depth — never trust the client extension) ---
+  // --- File validation (defense in depth — never trust the client extension or MIME type) ---
   const MAX_BYTES = 25 * 1024 * 1024;
   if (file.size > MAX_BYTES) {
     return NextResponse.json({ error: "File exceeds the 25MB limit" }, { status: 400 });
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  const isPdf = buffer.length > 4 && buffer.subarray(0, 4).toString("ascii") === "%PDF";
-  if (!isPdf || file.type !== "application/pdf") {
-    return NextResponse.json({ error: "Only valid PDF files are accepted" }, { status: 400 });
+  const detected = detectFileType(buffer);
+  if (!detected) {
+    return NextResponse.json(
+      { error: "Unsupported file. Please upload a PDF, Word document (.docx/.doc), or image (JPG/PNG/WebP)." },
+      { status: 400 }
+    );
   }
 
   // --- Reference number (race-safe, see lib/reference-number.ts) ---
@@ -53,12 +57,12 @@ export async function POST(req: NextRequest) {
 
   // --- Upload to storage, renamed to the reference number (never trust client filenames) ---
   const safeRef = referenceNumber.replace(/\//g, "_");
-  const storagePath = `${new Date().getFullYear()}/${safeRef}.pdf`;
+  const storagePath = `${new Date().getFullYear()}/${safeRef}.${detected.extension}`;
   const admin = createAdminClient();
   const bucket = process.env.SUPABASE_STORAGE_BUCKET || "documents";
 
   const { error: uploadError } = await admin.storage.from(bucket).upload(storagePath, buffer, {
-    contentType: "application/pdf",
+    contentType: detected.mimeType,
     upsert: false,
   });
   if (uploadError) {
@@ -77,6 +81,7 @@ export async function POST(req: NextRequest) {
         scannedFilePath: storagePath,
         fileSizeBytes: file.size,
         originalFileName: file.name,
+        mimeType: detected.mimeType,
         registeredById: me.id,
         originDeptId: me.departmentId ?? gmDept.id,
         routes: {

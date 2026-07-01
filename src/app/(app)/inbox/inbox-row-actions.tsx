@@ -91,7 +91,7 @@ export function InboxRowActions({
       {mode === "idle" && (
         <div className="flex flex-wrap gap-2">
           <Button size="sm" variant="ghost" onClick={viewFile}>
-            <Eye size={14} /> View PDF
+            <Eye size={14} /> View File
           </Button>
           <Button size="sm" variant="secondary" onClick={() => setMode("forwarding")}>
             <Send size={14} /> Forward

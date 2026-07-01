@@ -12,7 +12,7 @@ export function ViewFileButton({ documentId }: { documentId: string }) {
 
   return (
     <Button size="sm" variant="secondary" onClick={view}>
-      <Eye size={14} /> View PDF
+      <Eye size={14} /> View / Download File
     </Button>
   );
 }

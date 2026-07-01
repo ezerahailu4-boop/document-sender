@@ -34,5 +34,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Could not generate file link" }, { status: 500 });
   }
 
-  return NextResponse.json({ url: data.signedUrl });
+  return NextResponse.json({
+    url: data.signedUrl,
+    mimeType: document.mimeType,
+    originalFileName: document.originalFileName,
+  });
 }
