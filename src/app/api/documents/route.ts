@@ -16,8 +16,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Only Registry staff can register documents" }, { status: 403 });
   }
 
-  // Every document's first stop is the GM's office — found dynamically so
-  // Admin can reassign which department holds that flag without a code change.
   const gmDept = await prisma.department.findFirst({ where: { isGmOffice: true } });
   if (!gmDept) {
     return NextResponse.json(
@@ -33,8 +31,34 @@ export async function POST(req: NextRequest) {
   const receivedDate = String(form.get("receivedDate") || "");
   const file = form.get("file") as File | null;
 
+  // Optional explicit routing: if the sender picks a department directly,
+  // this skips the forced GM-first hop. If left blank, defaults to GM.
+  const targetDeptId = String(form.get("targetDeptId") || "").trim() || null;
+  const targetUserId = String(form.get("targetUserId") || "").trim() || null;
+
   if (!senderName || !subject || !receivedDate || !file) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+  }
+
+  // Resolve the actual destination department (explicit choice or GM default).
+  let destDept = gmDept;
+  if (targetDeptId) {
+    const chosen = await prisma.department.findUnique({ where: { id: targetDeptId } });
+    if (!chosen) {
+      return NextResponse.json({ error: "Selected department not found" }, { status: 400 });
+    }
+    destDept = chosen;
+  }
+
+  // If a specific user was chosen, confirm they actually belong to the
+  // destination department — prevents routing to a mismatched user via a
+  // stale or tampered form submission.
+  let destUser = null;
+  if (targetUserId) {
+    destUser = await prisma.user.findUnique({ where: { id: targetUserId } });
+    if (!destUser || destUser.departmentId !== destDept.id) {
+      return NextResponse.json({ error: "Selected user does not belong to the selected department" }, { status: 400 });
+    }
   }
 
   // --- File validation (defense in depth — never trust the client extension or MIME type) ---
@@ -69,7 +93,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Upload failed: ${uploadError.message}` }, { status: 500 });
   }
 
-  // --- Create document + first hop (Registry -> GM) + audit trail ---
+  const routedDetail = destUser
+    ? `Registered by ${me.fullName} and routed to ${destUser.fullName} in ${destDept.name}`
+    : `Registered by ${me.fullName} and routed to ${destDept.name}${destDept.id === gmDept.id ? " for review" : ""}`;
+
+  // --- Create document + first hop + audit trail ---
   const document = await prisma.$transaction(async (tx) => {
     return tx.document.create({
       data: {
@@ -88,7 +116,8 @@ export async function POST(req: NextRequest) {
           create: {
             sequence: 1,
             fromDeptId: me.departmentId ?? null,
-            toDeptId: gmDept.id,
+            toDeptId: destDept.id,
+            assignedUserId: destUser?.id ?? null,
             status: "PENDING",
           },
         },
@@ -96,7 +125,7 @@ export async function POST(req: NextRequest) {
           create: {
             actorName: me.fullName,
             event: "REGISTERED",
-            detail: `Registered by ${me.fullName} and routed to ${gmDept.name} for review`,
+            detail: routedDetail,
           },
         },
       },
@@ -104,7 +133,13 @@ export async function POST(req: NextRequest) {
     });
   });
 
-  await notifyRoute(document.routes[0].id, document.referenceNumber, document.subject, gmDept.name).catch(() => {});
+  await notifyRoute(
+    document.routes[0].id,
+    document.referenceNumber,
+    document.subject,
+    destDept.name,
+    destUser?.id
+  ).catch(() => {});
 
   return NextResponse.json({ id: document.id, referenceNumber: document.referenceNumber });
 }

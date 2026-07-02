@@ -9,18 +9,22 @@ import {
   FilePlus2,
   Bell,
   Settings,
-  Stamp,
   Building2,
   Users,
   ClipboardList,
+  Search,
+  Crown,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TafLogo } from "@/components/logo";
 
 const NAV = [
   { href: "/dashboard", label: "Master Ledger", icon: LayoutDashboard, roles: ["REGISTRY_STAFF", "ADMIN"] },
   { href: "/register", label: "Register Document", icon: FilePlus2, roles: ["REGISTRY_STAFF", "ADMIN"] },
+  { href: "/gm", label: "GM's Office", icon: Crown, roles: ["GM", "ADMIN"] },
   { href: "/inbox", label: "Inbox", icon: Inbox, roles: ["GM", "DEPARTMENT_USER", "DEPARTMENT_HEAD", "ADMIN"] },
+  { href: "/find", label: "Find Document", icon: Search, roles: ["REGISTRY_STAFF", "GM", "DEPARTMENT_USER", "DEPARTMENT_HEAD", "ADMIN"] },
 ];
 
 const ADMIN_NAV = [
@@ -92,7 +96,7 @@ function SidebarFooter({ unreadCount, onNavigate }: { unreadCount: number; onNav
           Notifications
         </span>
         {unreadCount > 0 && (
-          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-xs font-semibold text-white">
+          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-xs font-semibold text-primary-foreground">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
@@ -112,13 +116,13 @@ function SidebarFooter({ unreadCount, onNavigate }: { unreadCount: number; onNav
 function BrandHeader({ onClose }: { onClose?: () => void }) {
   return (
     <div className="flex items-center justify-between border-b border-border px-5 py-5">
-      <div className="flex items-center gap-2">
-        <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-white">
-          <Stamp size={18} />
+      <div className="flex items-center gap-2.5">
+        <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground">
+          <TafLogo size={20} />
         </div>
         <div>
-          <p className="text-sm font-semibold leading-none text-foreground">DocTrack</p>
-          <p className="text-xs text-muted-foreground">Registry & Workflow</p>
+          <p className="text-sm font-semibold leading-tight text-foreground">TAF Energies</p>
+          <p className="text-xs text-muted-foreground">Doc Tracker</p>
         </div>
       </div>
       {onClose && (
@@ -163,7 +167,7 @@ export function MobileSidebar({
   return (
     <div className="fixed inset-0 z-50 md:hidden">
       <div className="absolute inset-0 bg-foreground/40" onClick={onClose} />
-      <aside className="absolute inset-y-0 left-0 flex w-72 flex-col bg-card shadow-xl">
+      <aside className="absolute inset-y-0 left-0 flex w-[85vw] max-w-72 flex-col bg-card shadow-xl">
         <BrandHeader onClose={onClose} />
         <NavLinks role={role} onNavigate={onClose} />
         <SidebarFooter unreadCount={unreadCount} onNavigate={onClose} />

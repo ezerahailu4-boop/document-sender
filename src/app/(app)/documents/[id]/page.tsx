@@ -40,7 +40,7 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
         userName={user.fullName}
         userRole={ROLE_LABELS[user.role]}
       />
-      <main className="flex-1 overflow-y-auto p-6">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6">
         <div className="mx-auto max-w-3xl space-y-6">
           <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -50,7 +50,7 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
               </div>
               <ViewFileButton documentId={document.id} />
             </div>
-            <dl className="grid grid-cols-2 gap-4 text-sm">
+            <dl className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
               <div>
                 <dt className="text-muted-foreground">Sender</dt>
                 <dd className="text-foreground">{document.senderName}</dd>
@@ -67,7 +67,7 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
                 <dt className="text-muted-foreground">Registered by</dt>
                 <dd className="text-foreground">{document.registeredBy.fullName}</dd>
               </div>
-              <div className="col-span-2">
+              <div className="sm:col-span-2">
                 <dt className="text-muted-foreground">Subject</dt>
                 <dd className="text-foreground">{document.subject}</dd>
               </div>
@@ -85,14 +85,16 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
               {document.routes.map((route) => {
                 const rcfg = ROUTE_STATUS_CONFIG[route.status];
                 return (
-                  <div key={route.id} className="flex items-center gap-3 rounded-md border border-border bg-background p-3">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary/15 text-xs font-semibold text-secondary">
-                      {route.sequence}
-                    </span>
-                    <div className="flex flex-1 items-center gap-2 text-sm">
-                      <span className="text-muted-foreground">{route.fromDept?.name ?? "Registry"}</span>
-                      <ArrowRight size={14} className="text-muted-foreground" />
-                      <span className="font-medium text-foreground">{route.toDept.name}</span>
+                  <div key={route.id} className="flex flex-col gap-2 rounded-md border border-border bg-background p-3 sm:flex-row sm:items-center sm:gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary/15 text-xs font-semibold text-secondary">
+                        {route.sequence}
+                      </span>
+                      <div className="flex flex-1 flex-wrap items-center gap-2 text-sm sm:flex-1">
+                        <span className="text-muted-foreground">{route.fromDept?.name ?? "Registry"}</span>
+                        <ArrowRight size={14} className="text-muted-foreground" />
+                        <span className="font-medium text-foreground">{route.toDept.name}</span>
+                      </div>
                     </div>
                     <StatusBadge label={rcfg.label} textClass={rcfg.text} bgClass={rcfg.bg} />
                   </div>

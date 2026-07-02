@@ -16,7 +16,7 @@ export default async function NotificationsPage() {
   return (
     <>
       <Topbar title="Notifications" userName={user.fullName} userRole={ROLE_LABELS[user.role]} />
-      <main className="flex-1 overflow-y-auto p-6">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6">
         <div className="mx-auto max-w-2xl space-y-2">
           {notifications.length === 0 && (
             <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card py-16 text-center">

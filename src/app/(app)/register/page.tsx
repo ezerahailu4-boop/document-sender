@@ -11,17 +11,21 @@ export default async function RegisterPage() {
     redirect("/dashboard");
   }
 
-  const gmDept = await prisma.department.findFirst({ where: { isGmOffice: true } });
+  const departments = await prisma.department.findMany({
+    orderBy: { name: "asc" },
+    select: { id: true, name: true, isGmOffice: true },
+  });
+  const gmDept = departments.find((d) => d.isGmOffice) ?? null;
 
   return (
     <>
       <Topbar
         title="Register Document"
-        subtitle="Every new document is routed to the GM's office first"
+        subtitle="Choose whether it goes to the GM or straight to a department"
         userName={user.fullName}
         userRole={ROLE_LABELS[user.role]}
       />
-      <main className="flex-1 overflow-y-auto p-6">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6">
         <div className="mx-auto max-w-2xl">
           {!gmDept && (
             <div className="mb-4 rounded-md bg-warning/15 px-4 py-3 text-sm text-warning">
@@ -29,7 +33,7 @@ export default async function RegisterPage() {
               GM&apos;s office in Departments settings before documents can be registered.
             </div>
           )}
-          <RegisterForm gmDeptName={gmDept?.name ?? null} />
+          <RegisterForm gmDeptName={gmDept?.name ?? null} departments={departments} />
         </div>
       </main>
     </>

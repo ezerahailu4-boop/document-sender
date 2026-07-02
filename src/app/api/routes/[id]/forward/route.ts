@@ -12,7 +12,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const me = await prisma.user.findUnique({ where: { authId: authUser.id } });
   if (!me) return NextResponse.json({ error: "No profile found" }, { status: 403 });
 
-  const { toDepartmentId, comments } = await req.json();
+  const { toDepartmentId, toUserId, comments } = await req.json();
   if (!toDepartmentId) {
     return NextResponse.json({ error: "Select a destination department" }, { status: 400 });
   }
@@ -35,6 +35,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const destDept = await prisma.department.findUnique({ where: { id: toDepartmentId } });
   if (!destDept) return NextResponse.json({ error: "Destination department not found" }, { status: 400 });
 
+  // If the forwarder chose a specific person, confirm that user actually
+  // belongs to the destination department.
+  let destUser = null;
+  if (toUserId) {
+    destUser = await prisma.user.findUnique({ where: { id: toUserId } });
+    if (!destUser || destUser.departmentId !== destDept.id || !destUser.isActive) {
+      return NextResponse.json({ error: "Selected user does not belong to the selected department" }, { status: 400 });
+    }
+  }
+
   const result = await prisma.$transaction(async (tx) => {
     await tx.documentRoute.update({
       where: { id: routeId },
@@ -50,6 +60,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         sequence: currentRoute.sequence + 1,
         fromDeptId: currentRoute.toDeptId,
         toDeptId: toDepartmentId,
+        assignedUserId: destUser?.id ?? null,
         status: "PENDING",
       },
     });
@@ -64,14 +75,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         documentId: currentRoute.documentId,
         actorName: me.fullName,
         event: "FORWARDED",
-        detail: `Forwarded by ${me.fullName} from ${currentRoute.toDept.name} to ${destDept.name}`,
+        detail: destUser
+          ? `Forwarded by ${me.fullName} from ${currentRoute.toDept.name} to ${destUser.fullName} in ${destDept.name}`
+          : `Forwarded by ${me.fullName} from ${currentRoute.toDept.name} to ${destDept.name}`,
       },
     });
 
     return newRoute;
   });
 
-  await notifyRoute(result.id, currentRoute.document.referenceNumber, currentRoute.document.subject, destDept.name).catch(() => {});
+  await notifyRoute(
+    result.id,
+    currentRoute.document.referenceNumber,
+    currentRoute.document.subject,
+    destDept.name,
+    destUser?.id
+  ).catch(() => {});
 
   return NextResponse.json({ ok: true, newRouteId: result.id });
 }

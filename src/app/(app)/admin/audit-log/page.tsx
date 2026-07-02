@@ -50,7 +50,7 @@ export default async function AuditLogPage({
         userRole={ROLE_LABELS[user.role]}
       />
       <main className="flex-1 overflow-y-auto p-4 md:p-6">
-        <div className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+        <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-sm">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-background text-left text-xs uppercase tracking-wide text-muted-foreground">

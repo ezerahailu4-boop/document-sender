@@ -13,5 +13,6 @@ export default async function RootPage() {
 
   if (profile.role === "ADMIN") redirect("/admin");
   if (profile.role === "REGISTRY_STAFF") redirect("/dashboard");
+  if (profile.role === "GM") redirect("/gm");
   redirect("/inbox");
 }

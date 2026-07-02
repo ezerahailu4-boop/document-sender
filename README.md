@@ -1,4 +1,4 @@
-# DocTrack — Inbound Document Tracking & Workflow Automation System
+# TAF Energies Doc Tracker — Inbound Document Tracking & Workflow Automation System
 
 Replaces an Outlook-based registry process. Built with Next.js 14 (App
 Router), TypeScript, Tailwind, Supabase (Auth + Postgres + Storage), and
@@ -6,16 +6,24 @@ Prisma.
 
 ## Workflow
 
-1. **Registry staff** upload the scanned PDF + sender/subject info. The
-   system generates a reference number (e.g. `TAF/IN/2026/001`) and routes
-   the document to the **GM's office** automatically — every document's
-   first stop.
-2. The **GM** reviews it and forwards it to the relevant **department**.
-3. That department can act on it, **mark it Completed**, or **forward it
-   again** to another department if needed.
-4. **Admin** sees everything on the Master Ledger, and manages
-   Departments (including which one is flagged as the GM's office) and
-   Users (creating accounts, assigning roles).
+1. **Registry staff** upload the scanned document + sender/subject info,
+   then choose where it goes: the **GM's office** (default), or a
+   **specific department** — optionally targeting one named person within
+   that department. A reference number (e.g. `TAF/IN/2026/001`) is
+   generated automatically either way.
+2. If routed to the GM: the **GM** reviews it from their dedicated
+   `/gm` overview page and forwards it on. When the GM forwards, they
+   search for and pick a **specific person** by name (not just a
+   department) — the document lands directly in that person's inbox.
+3. That person can act on it, **mark it Completed**, **forward it
+   again** (to a department, same as Registry), or **return it** with a
+   reason if it landed on them by mistake.
+4. **Admin** sees everything on the Master Ledger, manages Departments
+   (including which one is flagged as the GM's office) and Users.
+5. Anyone can **find a document instantly** by reference number from
+   the Find Document page — department users only see documents that
+   have passed through their own department; Registry/Admin see
+   everything.
 
 Every hop is logged in a per-document audit trail, and recipients get
 both an in-app and email notification when something lands in their
@@ -91,6 +99,23 @@ from `.env.example` in the Vercel project settings, and deploy. Run
 use.
 
 ## Notes
+
+- **Rebrand**: the app is now "TAF Energies Doc Tracker" throughout —
+  page title, sidebar, login, password reset pages, and outbound
+  notification emails.
+- **Flexible routing at registration**: Registry chooses GM (default)
+  or a specific department, optionally targeting one named person.
+- **GM's Office page** (`/gm`): a dedicated dashboard for the GM role
+  showing stats, average turnaround time, current overdue items, and
+  full history of everything ever routed through that office.
+- **GM forwards to a person, not just a department**: when the GM
+  forwards a document, they search across all registered users by name
+  (not a department dropdown) — the document lands directly in that
+  person's inbox and only they get notified.
+- **Find Document** (`/find`): quick reference-number lookup available
+  to every role, with access scoped the same way as elsewhere
+  (department users only see documents that passed through their own
+  department).
 
 - Uploaded PDFs are validated by magic-byte sniffing (not just file
   extension) and renamed to their reference number before storage —

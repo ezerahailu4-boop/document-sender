@@ -14,8 +14,8 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DocTrack — Document Tracking & Workflow",
-  description: "Inbound document tracking and workflow automation system",
+  title: "TAF Energies — Doc Tracker",
+  description: "TAF Energies inbound document tracking and workflow automation system",
 };
 
 export default function RootLayout({

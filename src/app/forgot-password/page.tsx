@@ -6,7 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Stamp, CheckCircle2, ArrowLeft } from "lucide-react";
+import { CheckCircle2, ArrowLeft } from "lucide-react";
+import { TafLogo } from "@/components/logo";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -36,7 +37,7 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center text-center">
           <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-white">
-            <Stamp size={24} />
+            <TafLogo size={26} />
           </div>
           <h1 className="text-xl font-semibold text-foreground">Reset your password</h1>
           <p className="text-sm text-muted-foreground">We&apos;ll email you a link to set a new one.</p>
