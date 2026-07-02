@@ -12,8 +12,8 @@ export async function POST(req: NextRequest) {
 
   const me = await prisma.user.findUnique({ where: { authId: authUser.id } });
   if (!me) return NextResponse.json({ error: "No profile found" }, { status: 403 });
-  if (me.role !== "REGISTRY_STAFF" && me.role !== "ADMIN") {
-    return NextResponse.json({ error: "Only Registry staff can register documents" }, { status: 403 });
+  if (!me.isActive) {
+    return NextResponse.json({ error: "Your account is inactive" }, { status: 403 });
   }
 
   const gmDept = await prisma.department.findFirst({ where: { isGmOffice: true } });

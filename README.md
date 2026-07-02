@@ -34,9 +34,14 @@ inbox.
 | Role | Can do |
 |---|---|
 | `REGISTRY_STAFF` | Register new documents, view the Master Ledger |
-| `GM` | Inbox — review & forward documents (first stop) |
-| `DEPARTMENT_USER` / `DEPARTMENT_HEAD` | Inbox — review, forward, or complete documents |
-| `ADMIN` | Everything above, plus manage Departments & Users |
+| `GM` | Register documents, Inbox — review & forward (first stop) |
+| `DEPARTMENT_USER` / `DEPARTMENT_HEAD` | Register documents, Inbox — review, forward, or complete |
+| `ADMIN` | Everything above, plus manage Departments, Users, and view system-wide Document Routing |
+
+Every role can register a new incoming document — not just Registry
+staff. The Master Ledger (full document list with search/export/
+archive) and per-document corrections remain Registry/Admin-only, since
+those are oversight functions rather than intake.
 
 ## Setup
 
@@ -161,6 +166,11 @@ use.
 - **Admin Overview** (`/admin`): system-wide stats, an overdue feed
   across every department, and a recent-activity feed — the Admin's
   home page.
+- **Document Routing** (`/admin/routing`): a live, system-wide table of
+  every currently-active document — where it is right now (department
+  or person), status, and days there — filterable by Pending/Opened.
+  This is the "where is everything" view, distinct from the Master
+  Ledger's per-document summary.
 - **Audit Log** (`/admin/audit-log`): a paginated, system-wide table of
   every audit event across every document (registrations, forwards,
   returns, completions, corrections, archiving).
@@ -181,3 +191,10 @@ use.
   color tokens (`bg-card`, `text-muted-foreground`, `bg-destructive/10`,
   etc.) rather than hardcoded colors, so nothing was missed when
   switching themes.
+- **Working notifications**: the sidebar bell badge now polls
+  `/api/notifications/unread-count` every 30s so it stays live without
+  a full page reload. Visiting the Notifications page marks everything
+  read (with a short delay so a quick glance doesn't clear the badge
+  before you've actually read anything) and individual items can be
+  marked read on their own — neither of these existed before, which is
+  why the badge count used to get stuck.

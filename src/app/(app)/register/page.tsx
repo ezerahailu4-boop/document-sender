@@ -1,15 +1,11 @@
 import { getCurrentUser } from "../actions";
 import { Topbar } from "@/components/layout/topbar";
 import { ROLE_LABELS } from "@/lib/status";
-import { redirect } from "next/navigation";
 import { RegisterForm } from "./register-form";
 import { prisma } from "@/lib/prisma";
 
 export default async function RegisterPage() {
   const user = await getCurrentUser();
-  if (user.role !== "REGISTRY_STAFF" && user.role !== "ADMIN") {
-    redirect("/dashboard");
-  }
 
   const departments = await prisma.department.findMany({
     orderBy: { name: "asc" },
@@ -33,7 +29,7 @@ export default async function RegisterPage() {
               GM&apos;s office in Departments settings before documents can be registered.
             </div>
           )}
-          <RegisterForm gmDeptName={gmDept?.name ?? null} departments={departments} />
+          <RegisterForm gmDeptName={gmDept?.name ?? null} departments={departments} canViewLedger={user.role === "REGISTRY_STAFF" || user.role === "ADMIN"} />
         </div>
       </main>
     </>

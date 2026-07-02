@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, createContext, useContext } from "react";
+import { useState, useEffect, createContext, useContext } from "react";
 import { Sidebar, MobileSidebar } from "./sidebar";
 
 const MobileNavContext = createContext<{ open: () => void } | null>(null);
@@ -11,9 +11,19 @@ export function useMobileNav() {
   return ctx;
 }
 
+// Notified components (e.g. the notifications page, after marking things
+// read) can call this to force an immediate badge refresh instead of
+// waiting for the next poll tick.
+const listeners = new Set<() => void>();
+export function refreshUnreadCount() {
+  listeners.forEach((fn) => fn());
+}
+
+const POLL_INTERVAL_MS = 30_000;
+
 export function AppShell({
   role,
-  unreadCount,
+  unreadCount: initialUnreadCount,
   children,
 }: {
   role: string;
@@ -21,6 +31,32 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(initialUnreadCount);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchCount() {
+      try {
+        const res = await fetch("/api/notifications/unread-count");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled && typeof data.count === "number") setUnreadCount(data.count);
+      } catch {
+        // Silent — a failed poll just means the badge stays at its last
+        // known value until the next successful tick.
+      }
+    }
+
+    listeners.add(fetchCount);
+    const interval = setInterval(fetchCount, POLL_INTERVAL_MS);
+
+    return () => {
+      cancelled = true;
+      listeners.delete(fetchCount);
+      clearInterval(interval);
+    };
+  }, []);
 
   return (
     <MobileNavContext.Provider value={{ open: () => setMobileOpen(true) }}>

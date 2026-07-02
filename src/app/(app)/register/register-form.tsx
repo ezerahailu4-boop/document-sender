@@ -36,7 +36,15 @@ function FilePreviewIcon({ name }: { name: string }) {
 
 type RouteMode = "gm" | "department" | "person";
 
-export function RegisterForm({ gmDeptName, departments }: { gmDeptName: string | null; departments: Dept[] }) {
+export function RegisterForm({
+  gmDeptName,
+  departments,
+  canViewLedger,
+}: {
+  gmDeptName: string | null;
+  departments: Dept[];
+  canViewLedger: boolean;
+}) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -163,9 +171,15 @@ export function RegisterForm({ gmDeptName, departments }: { gmDeptName: string |
         <p className="mb-1 text-sm text-muted-foreground">Document registered and routed to {success.destName}</p>
         <RefNumber value={success.referenceNumber} className="mb-6 text-base" />
         <div className="flex gap-3">
-          <Button variant="secondary" onClick={() => router.push("/dashboard")}>
-            View on Master Ledger
-          </Button>
+          {canViewLedger ? (
+            <Button variant="secondary" onClick={() => router.push("/dashboard")}>
+              View on Master Ledger
+            </Button>
+          ) : (
+            <Button variant="secondary" onClick={() => router.push("/inbox")}>
+              Go to Inbox
+            </Button>
+          )}
           <Button variant="ghost" onClick={resetAll}>
             Register another
           </Button>

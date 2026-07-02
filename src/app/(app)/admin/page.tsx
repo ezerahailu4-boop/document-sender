@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   Clock,
   ArrowRight,
+  MapPin,
 } from "lucide-react";
 
 export default async function AdminOverviewPage() {
@@ -41,6 +42,7 @@ export default async function AdminOverviewPage() {
   const inactiveUsers = userCounts.find((c) => !c.isActive)?._count.isActive ?? 0;
 
   const overdueDocs = overdueRoutes.filter((r) => isOverdue(r.receivedAt, r.status));
+  const activeRouteCount = await prisma.documentRoute.count({ where: { status: { in: ["PENDING", "OPENED"] } } });
 
   const stats = [
     { label: "Total Documents", value: totalDocs, icon: FileStack, color: "text-secondary", bg: "bg-secondary/15" },
@@ -138,7 +140,12 @@ export default async function AdminOverviewPage() {
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Link href="/admin/routing" className="rounded-lg border border-border bg-card p-5 shadow-sm hover:border-primary/40">
+            <MapPin className="mb-2 text-primary" size={20} />
+            <p className="font-medium text-foreground">Document Routing</p>
+            <p className="text-sm text-muted-foreground">{activeRouteCount} active right now</p>
+          </Link>
           <Link href="/admin/departments" className="rounded-lg border border-border bg-card p-5 shadow-sm hover:border-primary/40">
             <Building2 className="mb-2 text-primary" size={20} />
             <p className="font-medium text-foreground">Manage Departments</p>

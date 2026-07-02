@@ -14,6 +14,7 @@ import {
   ClipboardList,
   Search,
   Crown,
+  MapPin,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -21,7 +22,7 @@ import { TafLogo } from "@/components/logo";
 
 const NAV = [
   { href: "/dashboard", label: "Master Ledger", icon: LayoutDashboard, roles: ["REGISTRY_STAFF", "ADMIN"] },
-  { href: "/register", label: "Register Document", icon: FilePlus2, roles: ["REGISTRY_STAFF", "ADMIN"] },
+  { href: "/register", label: "Register Document", icon: FilePlus2, roles: ["REGISTRY_STAFF", "GM", "DEPARTMENT_USER", "DEPARTMENT_HEAD", "ADMIN"] },
   { href: "/gm", label: "GM's Office", icon: Crown, roles: ["GM", "ADMIN"] },
   { href: "/inbox", label: "Inbox", icon: Inbox, roles: ["REGISTRY_STAFF", "GM", "DEPARTMENT_USER", "DEPARTMENT_HEAD", "ADMIN"] },
   { href: "/find", label: "Find Document", icon: Search, roles: ["REGISTRY_STAFF", "GM", "DEPARTMENT_USER", "DEPARTMENT_HEAD", "ADMIN"] },
@@ -29,6 +30,7 @@ const NAV = [
 
 const ADMIN_NAV = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
+  { href: "/admin/routing", label: "Document Routing", icon: MapPin },
   { href: "/admin/departments", label: "Departments", icon: Building2 },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/audit-log", label: "Audit Log", icon: ClipboardList },
