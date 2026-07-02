@@ -40,24 +40,36 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
-  // Resolve the actual destination department (explicit choice or GM default).
+  // Resolve destination: three modes —
+  //  1. targetUserId only (no targetDeptId): "choose a person" flow — the
+  //     user's own department becomes the destination automatically.
+  //  2. targetDeptId (+ optional targetUserId): "choose a department" flow.
+  //  3. neither: defaults to the GM's office.
   let destDept = gmDept;
-  if (targetDeptId) {
-    const chosen = await prisma.department.findUnique({ where: { id: targetDeptId } });
-    if (!chosen) {
-      return NextResponse.json({ error: "Selected department not found" }, { status: 400 });
-    }
-    destDept = chosen;
-  }
-
-  // If a specific user was chosen, confirm they actually belong to the
-  // destination department — prevents routing to a mismatched user via a
-  // stale or tampered form submission.
   let destUser = null;
-  if (targetUserId) {
-    destUser = await prisma.user.findUnique({ where: { id: targetUserId } });
-    if (!destUser || destUser.departmentId !== destDept.id) {
-      return NextResponse.json({ error: "Selected user does not belong to the selected department" }, { status: 400 });
+
+  if (targetUserId && !targetDeptId) {
+    destUser = await prisma.user.findUnique({ where: { id: targetUserId }, include: { department: true } });
+    if (!destUser || !destUser.isActive || !destUser.department) {
+      return NextResponse.json({ error: "Selected user is not available for routing" }, { status: 400 });
+    }
+    destDept = destUser.department;
+  } else {
+    if (targetDeptId) {
+      const chosen = await prisma.department.findUnique({ where: { id: targetDeptId } });
+      if (!chosen) {
+        return NextResponse.json({ error: "Selected department not found" }, { status: 400 });
+      }
+      destDept = chosen;
+    }
+    // If a specific user was chosen alongside a department, confirm they
+    // actually belong to it — prevents routing to a mismatched user via a
+    // stale or tampered form submission.
+    if (targetUserId) {
+      destUser = await prisma.user.findUnique({ where: { id: targetUserId } });
+      if (!destUser || destUser.departmentId !== destDept.id) {
+        return NextResponse.json({ error: "Selected user does not belong to the selected department" }, { status: 400 });
+      }
     }
   }
 

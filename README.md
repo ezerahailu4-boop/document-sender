@@ -103,8 +103,11 @@ use.
 - **Rebrand**: the app is now "TAF Energies Doc Tracker" throughout —
   page title, sidebar, login, password reset pages, and outbound
   notification emails.
-- **Flexible routing at registration**: Registry chooses GM (default)
-  or a specific department, optionally targeting one named person.
+- **Flexible routing at registration**: Registry chooses one of three
+  options for every new document — the GM's office (default), a
+  specific department (optionally targeting one named person within
+  it), or **a specific person directly** by searching across every
+  registered user institution-wide, same as the GM's forward flow.
 - **GM's Office page** (`/gm`): a dedicated dashboard for the GM role
   showing stats, average turnaround time, current overdue items, and
   full history of everything ever routed through that office.

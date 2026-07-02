@@ -11,9 +11,10 @@ export async function GET() {
   if (!me) return NextResponse.json({ error: "No profile found" }, { status: 403 });
 
   // Every active user who belongs to a department (i.e. can actually
-  // receive a document) — used for the GM's "forward to a person" picker,
-  // which searches across the whole institution rather than picking a
-  // department first.
+  // receive a document) — used by both the GM's "forward to a person"
+  // picker and Registry's "choose a person" routing option at
+  // registration time, which both search across the whole institution
+  // rather than picking a department first.
   const users = await prisma.user.findMany({
     where: { isActive: true, departmentId: { not: null } },
     select: { id: true, fullName: true, role: true, departmentId: true, department: { select: { name: true } } },
