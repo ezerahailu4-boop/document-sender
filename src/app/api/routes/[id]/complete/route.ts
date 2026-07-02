@@ -19,8 +19,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (route.status === "FORWARDED" || route.status === "COMPLETED") {
     return NextResponse.json({ error: "This document has already moved on" }, { status: 409 });
   }
-  if (me.role !== "ADMIN" && me.departmentId !== route.toDeptId) {
-    return NextResponse.json({ error: "This document is not in your department's inbox" }, { status: 403 });
+  if (me.role !== "ADMIN") {
+    const isDeptMember = route.toDeptId && me.departmentId === route.toDeptId;
+    const isPersonalAssignee = !route.toDeptId && route.assignedUserId === me.id;
+    if (!isDeptMember && !isPersonalAssignee) {
+      return NextResponse.json({ error: "This document is not in your inbox" }, { status: 403 });
+    }
   }
 
   await prisma.$transaction(async (tx) => {
@@ -40,7 +44,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         documentId: route.documentId,
         actorName: me.fullName,
         event: "COMPLETED",
-        detail: `Marked complete by ${me.fullName} in ${route.toDept.name}`,
+        detail: `Marked complete by ${me.fullName}${route.toDept ? ` in ${route.toDept.name}` : ""}`,
       },
     });
   });

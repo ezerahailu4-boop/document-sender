@@ -19,7 +19,7 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
     include: {
       registeredBy: true,
       originDept: true,
-      routes: { orderBy: { sequence: "asc" }, include: { toDept: true, fromDept: true } },
+      routes: { orderBy: { sequence: "asc" }, include: { toDept: true, fromDept: true, assignedUser: true } },
       auditEvents: { orderBy: { createdAt: "asc" } },
     },
   });
@@ -27,7 +27,11 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
   if (!document) notFound();
 
   const isRegistryOrAdmin = user.role === "REGISTRY_STAFF" || user.role === "ADMIN";
-  const hasAccess = isRegistryOrAdmin || document.routes.some((r) => r.toDeptId === user.departmentId);
+  const hasAccess =
+    isRegistryOrAdmin ||
+    document.routes.some(
+      (r) => r.toDeptId === user.departmentId || (!r.toDeptId && r.assignedUserId === user.id)
+    );
   if (!hasAccess) redirect("/inbox");
 
   const cfg = DOCUMENT_STATUS_CONFIG[document.status];
@@ -93,7 +97,9 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
                       <div className="flex flex-1 flex-wrap items-center gap-2 text-sm sm:flex-1">
                         <span className="text-muted-foreground">{route.fromDept?.name ?? "Registry"}</span>
                         <ArrowRight size={14} className="text-muted-foreground" />
-                        <span className="font-medium text-foreground">{route.toDept.name}</span>
+                        <span className="font-medium text-foreground">
+                          {route.toDept?.name ?? route.assignedUser?.fullName ?? "Unassigned"}
+                        </span>
                       </div>
                     </div>
                     <StatusBadge label={rcfg.label} textClass={rcfg.text} bgClass={rcfg.bg} />

@@ -13,8 +13,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const route = await prisma.documentRoute.findUnique({ where: { id: routeId } });
   if (!route) return NextResponse.json({ error: "Route not found" }, { status: 404 });
-  if (me.role !== "ADMIN" && me.departmentId !== route.toDeptId) {
-    return NextResponse.json({ error: "This document is not in your department's inbox" }, { status: 403 });
+  if (me.role !== "ADMIN") {
+    const isDeptMember = route.toDeptId && me.departmentId === route.toDeptId;
+    const isPersonalAssignee = !route.toDeptId && route.assignedUserId === me.id;
+    if (!isDeptMember && !isPersonalAssignee) {
+      return NextResponse.json({ error: "This document is not in your inbox" }, { status: 403 });
+    }
   }
 
   if (route.status === "PENDING") {

@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
 
 type Dept = { id: string; name: string; isGmOffice: boolean };
 type DeptUser = { id: string; fullName: string; role: string };
-type RoutableUser = { id: string; fullName: string; role: string; departmentId: string; departmentName: string };
+type RoutableUser = { id: string; fullName: string; role: string; departmentId: string | null; departmentName: string };
 
 function FilePreviewIcon({ name }: { name: string }) {
   const ext = name.split(".").pop()?.toLowerCase() ?? "";

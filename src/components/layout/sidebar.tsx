@@ -23,7 +23,7 @@ const NAV = [
   { href: "/dashboard", label: "Master Ledger", icon: LayoutDashboard, roles: ["REGISTRY_STAFF", "ADMIN"] },
   { href: "/register", label: "Register Document", icon: FilePlus2, roles: ["REGISTRY_STAFF", "ADMIN"] },
   { href: "/gm", label: "GM's Office", icon: Crown, roles: ["GM", "ADMIN"] },
-  { href: "/inbox", label: "Inbox", icon: Inbox, roles: ["GM", "DEPARTMENT_USER", "DEPARTMENT_HEAD", "ADMIN"] },
+  { href: "/inbox", label: "Inbox", icon: Inbox, roles: ["REGISTRY_STAFF", "GM", "DEPARTMENT_USER", "DEPARTMENT_HEAD", "ADMIN"] },
   { href: "/find", label: "Find Document", icon: Search, roles: ["REGISTRY_STAFF", "GM", "DEPARTMENT_USER", "DEPARTMENT_HEAD", "ADMIN"] },
 ];
 

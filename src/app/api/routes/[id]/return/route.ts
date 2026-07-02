@@ -26,12 +26,23 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (currentRoute.status === "FORWARDED" || currentRoute.status === "COMPLETED") {
     return NextResponse.json({ error: "This document has already moved on" }, { status: 409 });
   }
-  if (me.role !== "ADMIN" && me.departmentId !== currentRoute.toDeptId) {
-    return NextResponse.json({ error: "This document is not in your department's inbox" }, { status: 403 });
+  if (me.role !== "ADMIN") {
+    const isDeptMember = currentRoute.toDeptId && me.departmentId === currentRoute.toDeptId;
+    const isPersonalAssignee = !currentRoute.toDeptId && currentRoute.assignedUserId === me.id;
+    if (!isDeptMember && !isPersonalAssignee) {
+      return NextResponse.json({ error: "This document is not in your inbox" }, { status: 403 });
+    }
   }
-  if (!currentRoute.fromDeptId) {
+  // "Nowhere to return to" now means no prior hop at all — a route with no
+  // department can still have a fromDeptId (it was forwarded from a real
+  // department to a departmentless person), so this only blocks the very
+  // first hop of a document's journey.
+  if (!currentRoute.fromDeptId && currentRoute.sequence === 1) {
     return NextResponse.json({ error: "This is the first stop for this document — there's nowhere to return it to" }, { status: 400 });
   }
+
+  const fromLabel = currentRoute.toDept?.name ?? me.fullName;
+  const backToLabel = currentRoute.fromDept?.name ?? "Registry";
 
   const result = await prisma.$transaction(async (tx) => {
     await tx.documentRoute.update({
@@ -47,9 +58,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         documentId: currentRoute.documentId,
         sequence: currentRoute.sequence + 1,
         fromDeptId: currentRoute.toDeptId,
-        toDeptId: currentRoute.fromDeptId!,
+        toDeptId: currentRoute.fromDeptId ?? null,
         status: "PENDING",
-        comments: `Returned from ${currentRoute.toDept.name}: ${reason.trim()}`,
+        comments: `Returned from ${fromLabel}: ${reason.trim()}`,
       },
     });
 
@@ -60,7 +71,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         documentId: currentRoute.documentId,
         actorName: me.fullName,
         event: "RETURNED",
-        detail: `Returned by ${me.fullName} from ${currentRoute.toDept.name} to ${currentRoute.fromDept?.name ?? "Registry"} — reason: ${reason.trim()}`,
+        detail: `Returned by ${me.fullName} from ${fromLabel} to ${backToLabel} — reason: ${reason.trim()}`,
       },
     });
 
@@ -71,7 +82,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     result.id,
     currentRoute.document.referenceNumber,
     `[Returned] ${currentRoute.document.subject}`,
-    currentRoute.fromDept?.name ?? "Registry"
+    backToLabel
   ).catch(() => {});
 
   return NextResponse.json({ ok: true });

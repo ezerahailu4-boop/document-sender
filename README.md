@@ -108,6 +108,11 @@ use.
   specific department (optionally targeting one named person within
   it), or **a specific person directly** by searching across every
   registered user institution-wide, same as the GM's forward flow.
+- **Any registered user can receive a document, department or not**:
+  a document route can point directly at a person with no department
+  at all (e.g. Registry staff) — it becomes their personal inbox item
+  rather than requiring department membership. Department is purely
+  descriptive context in that case, not a routing requirement.
 - **GM's Office page** (`/gm`): a dedicated dashboard for the GM role
   showing stats, average turnaround time, current overdue items, and
   full history of everything ever routed through that office.

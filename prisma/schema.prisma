@@ -137,8 +137,9 @@ model DocumentRoute {
 
   fromDeptId String?
   fromDept   Department? @relation("RouteFromDept", fields: [fromDeptId], references: [id])
-  toDeptId   String
-  toDept     Department  @relation("RouteToDept", fields: [toDeptId], references: [id])
+  toDeptId   String? // optional — a route can target a person with no department (e.g. Registry staff);
+                      // department is then just descriptive context via assignedUser's own record, not required
+  toDept     Department? @relation("RouteToDept", fields: [toDeptId], references: [id])
 
   status         RouteStatus @default(PENDING)
   assignedUserId String?

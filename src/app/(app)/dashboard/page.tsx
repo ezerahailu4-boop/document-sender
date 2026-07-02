@@ -51,7 +51,7 @@ export default async function DashboardPage({
         routes: {
           orderBy: { sequence: "desc" },
           take: 1,
-          include: { toDept: true },
+          include: { toDept: true, assignedUser: true },
         },
       },
     }),
@@ -156,10 +156,10 @@ export default async function DashboardPage({
               {documents.map((doc) => {
                 const cfg = DOCUMENT_STATUS_CONFIG[doc.status];
                 const currentRoute = doc.routes[0];
-                const currentDept = currentRoute?.toDept.name ?? "—";
+                const currentDept = currentRoute?.toDept?.name ?? currentRoute?.assignedUser?.fullName ?? "—";
                 const overdue = currentRoute ? isOverdue(currentRoute.receivedAt, currentRoute.status) : false;
                 return (
-                  <tr key={doc.id} className={cn("border-b border-border last:border-0 hover:bg-background", overdue && "bg-destructive/10/60")}>
+                  <tr key={doc.id} className={cn("border-b border-border last:border-0 hover:bg-background", overdue && "bg-destructive/5")}>
                     <td className="px-4 py-3">
                       <Link href={`/documents/${doc.id}`}>
                         <RefNumber value={doc.referenceNumber} />

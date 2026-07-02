@@ -11,8 +11,9 @@ const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KE
  *
  * If `targetUserId` is provided, only that specific user is notified
  * (used when a sender/GM explicitly picks a person, not just a
- * department). Otherwise every active user in `toDept` is notified, same
- * as before.
+ * department) — this also covers routes with no department at all
+ * (routed straight to a departmentless user's personal inbox).
+ * Otherwise every active user in `toDept` is notified.
  */
 export async function notifyRoute(
   routeId: string,
@@ -23,13 +24,24 @@ export async function notifyRoute(
 ) {
   const route = await prisma.documentRoute.findUnique({
     where: { id: routeId },
-    include: { toDept: { include: { users: true } } },
+    include: { toDept: { include: { users: true } }, assignedUser: true },
   });
   if (!route) return;
 
-  const recipients = targetUserId
-    ? route.toDept.users.filter((u) => u.isActive && u.id === targetUserId)
-    : route.toDept.users.filter((u) => u.isActive);
+  let recipients: { id: string; email: string; isActive: boolean }[] = [];
+  if (targetUserId) {
+    // Prefer the route's own department roster when available (covers the
+    // normal case), but fall back to the assigned user directly — this is
+    // the only source of truth when toDept is null.
+    const fromDept = route.toDept?.users.find((u) => u.isActive && u.id === targetUserId);
+    if (fromDept) {
+      recipients = [fromDept];
+    } else if (route.assignedUser?.isActive && route.assignedUser.id === targetUserId) {
+      recipients = [route.assignedUser];
+    }
+  } else if (route.toDept) {
+    recipients = route.toDept.users.filter((u) => u.isActive);
+  }
 
   const title = `New document: ${referenceNumber}`;
   const body = `"${subject}" has been routed to ${deptName}. Reference: ${referenceNumber}.`;

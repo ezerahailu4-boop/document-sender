@@ -10,13 +10,13 @@ export async function GET() {
   const me = await prisma.user.findUnique({ where: { authId: authUser.id } });
   if (!me) return NextResponse.json({ error: "No profile found" }, { status: 403 });
 
-  // Every active user who belongs to a department (i.e. can actually
-  // receive a document) — used by both the GM's "forward to a person"
-  // picker and Registry's "choose a person" routing option at
-  // registration time, which both search across the whole institution
-  // rather than picking a department first.
+  // Every active registered user — including ones with no department
+  // (e.g. Registry staff), who now receive documents in their own
+  // personal inbox rather than needing a department. Used by both the
+  // GM's "forward to a person" picker and Registry's "choose a person"
+  // routing option at registration time.
   const users = await prisma.user.findMany({
-    where: { isActive: true, departmentId: { not: null } },
+    where: { isActive: true },
     select: { id: true, fullName: true, role: true, departmentId: true, department: { select: { name: true } } },
     orderBy: { fullName: "asc" },
   });
@@ -27,7 +27,7 @@ export async function GET() {
       fullName: u.fullName,
       role: u.role,
       departmentId: u.departmentId,
-      departmentName: u.department?.name ?? "",
+      departmentName: u.department?.name ?? "No department",
     })),
   });
 }

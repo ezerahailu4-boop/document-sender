@@ -31,7 +31,7 @@ export default async function AdminOverviewPage() {
     }),
     prisma.documentRoute.findMany({
       where: { status: { in: ["PENDING", "OPENED"] } },
-      include: { toDept: true, document: { select: { referenceNumber: true, subject: true, id: true } } },
+      include: { toDept: true, assignedUser: true, document: { select: { referenceNumber: true, subject: true, id: true } } },
     }),
   ]);
 
@@ -94,7 +94,9 @@ export default async function AdminOverviewPage() {
                       <RefNumber value={r.document.referenceNumber} className="mb-1" />
                       <p className="truncate text-sm text-muted-foreground">{r.document.subject}</p>
                     </div>
-                    <span className="ml-3 shrink-0 text-xs font-medium text-destructive">{r.toDept.name}</span>
+                    <span className="ml-3 shrink-0 text-xs font-medium text-destructive">
+                      {r.toDept?.name ?? r.assignedUser?.fullName ?? "Unassigned"}
+                    </span>
                   </Link>
                 ))
               )}

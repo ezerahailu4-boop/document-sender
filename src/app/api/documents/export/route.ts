@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
   const documents = await prisma.document.findMany({
     where,
     orderBy: { createdAt: "desc" },
-    include: { routes: { orderBy: { sequence: "desc" }, take: 1, include: { toDept: true } } },
+    include: { routes: { orderBy: { sequence: "desc" }, take: 1, include: { toDept: true, assignedUser: true } } },
   });
 
   const header = ["Reference No.", "Sender", "Sender Org", "Subject", "Received Date", "Currently At", "Status", "Days Open"];
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
       doc.senderOrg ?? "",
       doc.subject,
       new Date(doc.receivedDate).toISOString().slice(0, 10),
-      doc.routes[0]?.toDept.name ?? "",
+      doc.routes[0]?.toDept?.name ?? doc.routes[0]?.assignedUser?.fullName ?? "",
       doc.status,
       String(days),
     ];

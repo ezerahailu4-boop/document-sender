@@ -21,7 +21,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   // view only if their department appears somewhere in this document's
   // routing history (current or past hop) — never arbitrary documents.
   const isRegistryOrAdmin = me.role === "REGISTRY_STAFF" || me.role === "ADMIN";
-  const hasRouteAccess = document.routes.some((r) => r.toDeptId === me.departmentId);
+  const hasRouteAccess = document.routes.some(
+    (r) => r.toDeptId === me.departmentId || (!r.toDeptId && r.assignedUserId === me.id)
+  );
   if (!isRegistryOrAdmin && !hasRouteAccess) {
     return NextResponse.json({ error: "You don't have access to this document" }, { status: 403 });
   }

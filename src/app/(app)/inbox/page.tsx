@@ -11,16 +11,21 @@ import { cn } from "@/lib/utils";
 
 export default async function InboxPage() {
   const user = await getCurrentUser();
-  const allowed = ["GM", "DEPARTMENT_USER", "DEPARTMENT_HEAD", "ADMIN"];
-  if (!allowed.includes(user.role)) redirect("/dashboard");
-  if (!user.departmentId && user.role !== "ADMIN") redirect("/dashboard");
 
+  // Anyone can land in an inbox now: a document can be routed straight to
+  // a departmentless user (e.g. Registry staff), not just department
+  // members. So the only real requirement is "this route is mine" —
+  // either because it's addressed to my department, or assigned to me
+  // personally with no department at all.
   const departments = await prisma.department.findMany({ orderBy: { name: "asc" } });
 
   const routes = await prisma.documentRoute.findMany({
     where: {
-      toDeptId: user.departmentId ?? undefined,
       status: { in: ["PENDING", "OPENED"] },
+      OR: [
+        ...(user.departmentId ? [{ toDeptId: user.departmentId }] : []),
+        { toDeptId: null, assignedUserId: user.id },
+      ],
     },
     include: { document: true, fromDept: true },
     orderBy: { receivedAt: "asc" },
@@ -37,7 +42,7 @@ export default async function InboxPage() {
   return (
     <>
       <Topbar
-        title="Department Inbox"
+        title="Inbox"
         subtitle={user.department ? `${user.department.name} — items waiting for action` : "Items waiting for action"}
         userName={user.fullName}
         userRole={ROLE_LABELS[user.role]}
@@ -47,7 +52,7 @@ export default async function InboxPage() {
           <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card py-16 text-center">
             <InboxIcon className="mb-3 text-muted-foreground" size={32} />
             <p className="text-sm font-medium text-foreground">Inbox is clear</p>
-            <p className="text-sm text-muted-foreground">Nothing is currently waiting on your department.</p>
+            <p className="text-sm text-muted-foreground">Nothing is currently waiting on you.</p>
           </div>
         ) : (
           <div className="space-y-3">

@@ -10,7 +10,7 @@ import { Eye, Send, CheckCircle, Undo2, Search, User as UserIcon } from "lucide-
 import { cn } from "@/lib/utils";
 
 type Dept = { id: string; name: string };
-type RoutableUser = { id: string; fullName: string; role: string; departmentId: string; departmentName: string };
+type RoutableUser = { id: string; fullName: string; role: string; departmentId: string | null; departmentName: string };
 type Mode = "idle" | "forwarding" | "returning";
 
 export function InboxRowActions({
@@ -78,9 +78,13 @@ export function InboxRowActions({
   }
 
   async function submitForward() {
-    const toDepartmentId = isGm ? selectedUser?.departmentId : destDept;
-    if (!toDepartmentId) {
-      setError(isGm ? "Search for and pick a person to forward to." : "Choose a department to forward to.");
+    if (isGm) {
+      if (!selectedUser) {
+        setError("Search for and pick a person to forward to.");
+        return;
+      }
+    } else if (!destDept) {
+      setError("Choose a department to forward to.");
       return;
     }
     setLoading(true);
@@ -89,8 +93,8 @@ export function InboxRowActions({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        toDepartmentId,
-        toUserId: selectedUser?.id,
+        toDepartmentId: isGm ? (selectedUser?.departmentId ?? undefined) : destDept,
+        toUserId: isGm ? selectedUser?.id : undefined,
         comments: comment || undefined,
       }),
     });

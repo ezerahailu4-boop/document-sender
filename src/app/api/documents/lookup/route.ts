@@ -19,14 +19,26 @@ export async function GET(req: NextRequest) {
   const documents = await prisma.document.findMany({
     where: {
       referenceNumber: { contains: q, mode: "insensitive" },
-      // Department users only ever find documents that have passed through
-      // their own department at some point — never the full ledger.
-      ...(isRegistryOrAdmin ? {} : { routes: { some: { toDeptId: me.departmentId ?? "__none__" } } }),
+      // Non-Registry/Admin users only ever find documents that have passed
+      // through their own department, OR were assigned directly to them
+      // with no department at all — never the full ledger.
+      ...(isRegistryOrAdmin
+        ? {}
+        : {
+            routes: {
+              some: {
+                OR: [
+                  ...(me.departmentId ? [{ toDeptId: me.departmentId }] : []),
+                  { toDeptId: null, assignedUserId: me.id },
+                ],
+              },
+            },
+          }),
     },
     orderBy: { createdAt: "desc" },
     take: 10,
     include: {
-      routes: { orderBy: { sequence: "desc" }, take: 1, include: { toDept: true } },
+      routes: { orderBy: { sequence: "desc" }, take: 1, include: { toDept: true, assignedUser: true } },
     },
   });
 
@@ -37,7 +49,7 @@ export async function GET(req: NextRequest) {
       subject: d.subject,
       senderName: d.senderName,
       status: d.status,
-      currentDept: d.routes[0]?.toDept.name ?? null,
+      currentDept: d.routes[0]?.toDept?.name ?? d.routes[0]?.assignedUser?.fullName ?? null,
     })),
   });
 }

@@ -13,8 +13,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!me) return NextResponse.json({ error: "No profile found" }, { status: 403 });
 
   const { toDepartmentId, toUserId, comments } = await req.json();
-  if (!toDepartmentId) {
-    return NextResponse.json({ error: "Select a destination department" }, { status: 400 });
+  if (!toDepartmentId && !toUserId) {
+    return NextResponse.json({ error: "Select a destination department or person" }, { status: 400 });
   }
 
   const currentRoute = await prisma.documentRoute.findUnique({
@@ -27,23 +27,43 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "This document has already moved on" }, { status: 409 });
   }
   // Authorization: only a member of the department that currently holds the
-  // document (or an Admin) may forward it.
-  if (me.role !== "ADMIN" && me.departmentId !== currentRoute.toDeptId) {
-    return NextResponse.json({ error: "This document is not in your department's inbox" }, { status: 403 });
+  // document, the person it's personally assigned to (when there's no
+  // department), or an Admin may forward it.
+  const isDeptMember = currentRoute.toDeptId && me.departmentId === currentRoute.toDeptId;
+  const isPersonalAssignee = !currentRoute.toDeptId && currentRoute.assignedUserId === me.id;
+  if (me.role !== "ADMIN" && !isDeptMember && !isPersonalAssignee) {
+    return NextResponse.json({ error: "This document is not in your inbox" }, { status: 403 });
   }
 
-  const destDept = await prisma.department.findUnique({ where: { id: toDepartmentId } });
-  if (!destDept) return NextResponse.json({ error: "Destination department not found" }, { status: 400 });
-
-  // If the forwarder chose a specific person, confirm that user actually
-  // belongs to the destination department.
+  // Resolve destination the same way registration does: a chosen person
+  // with no department routes to them directly; a chosen department (with
+  // an optional person within it) routes normally.
+  let destDept: { id: string; name: string } | null = null;
   let destUser = null;
-  if (toUserId) {
-    destUser = await prisma.user.findUnique({ where: { id: toUserId } });
-    if (!destUser || destUser.departmentId !== destDept.id || !destUser.isActive) {
-      return NextResponse.json({ error: "Selected user does not belong to the selected department" }, { status: 400 });
+
+  if (toUserId && !toDepartmentId) {
+    destUser = await prisma.user.findUnique({ where: { id: toUserId }, include: { department: true } });
+    if (!destUser || !destUser.isActive) {
+      return NextResponse.json({ error: "Selected user is not available for routing" }, { status: 400 });
+    }
+    destDept = destUser.department ?? null;
+  } else if (toDepartmentId) {
+    destDept = await prisma.department.findUnique({ where: { id: toDepartmentId } });
+    if (!destDept) return NextResponse.json({ error: "Destination department not found" }, { status: 400 });
+    if (toUserId) {
+      destUser = await prisma.user.findUnique({ where: { id: toUserId } });
+      if (!destUser || destUser.departmentId !== destDept.id || !destUser.isActive) {
+        return NextResponse.json({ error: "Selected user does not belong to the selected department" }, { status: 400 });
+      }
     }
   }
+
+  const fromLabel = currentRoute.toDept?.name ?? "their inbox";
+  const toLabel = destDept
+    ? destUser
+      ? `${destUser.fullName} in ${destDept.name}`
+      : destDept.name
+    : `${destUser?.fullName} directly`;
 
   const result = await prisma.$transaction(async (tx) => {
     await tx.documentRoute.update({
@@ -59,7 +79,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         documentId: currentRoute.documentId,
         sequence: currentRoute.sequence + 1,
         fromDeptId: currentRoute.toDeptId,
-        toDeptId: toDepartmentId,
+        toDeptId: destDept?.id ?? null,
         assignedUserId: destUser?.id ?? null,
         status: "PENDING",
       },
@@ -75,9 +95,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         documentId: currentRoute.documentId,
         actorName: me.fullName,
         event: "FORWARDED",
-        detail: destUser
-          ? `Forwarded by ${me.fullName} from ${currentRoute.toDept.name} to ${destUser.fullName} in ${destDept.name}`
-          : `Forwarded by ${me.fullName} from ${currentRoute.toDept.name} to ${destDept.name}`,
+        detail: `Forwarded by ${me.fullName} from ${fromLabel} to ${toLabel}`,
       },
     });
 
@@ -88,7 +106,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     result.id,
     currentRoute.document.referenceNumber,
     currentRoute.document.subject,
-    destDept.name,
+    destDept?.name ?? "you",
     destUser?.id
   ).catch(() => {});
 

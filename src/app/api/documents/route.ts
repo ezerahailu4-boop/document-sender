@@ -41,19 +41,21 @@ export async function POST(req: NextRequest) {
   }
 
   // Resolve destination: three modes —
-  //  1. targetUserId only (no targetDeptId): "choose a person" flow — the
-  //     user's own department becomes the destination automatically.
+  //  1. targetUserId only (no targetDeptId): "choose a person" flow — routes
+  //     to that person directly. If they have no department (e.g. Registry
+  //     staff), the route has no department at all — it's their personal
+  //     inbox, not a department inbox.
   //  2. targetDeptId (+ optional targetUserId): "choose a department" flow.
   //  3. neither: defaults to the GM's office.
-  let destDept = gmDept;
+  let destDept: { id: string; name: string } | null = gmDept;
   let destUser = null;
 
   if (targetUserId && !targetDeptId) {
     destUser = await prisma.user.findUnique({ where: { id: targetUserId }, include: { department: true } });
-    if (!destUser || !destUser.isActive || !destUser.department) {
+    if (!destUser || !destUser.isActive) {
       return NextResponse.json({ error: "Selected user is not available for routing" }, { status: 400 });
     }
-    destDept = destUser.department;
+    destDept = destUser.department ?? null;
   } else {
     if (targetDeptId) {
       const chosen = await prisma.department.findUnique({ where: { id: targetDeptId } });
@@ -67,7 +69,7 @@ export async function POST(req: NextRequest) {
     // stale or tampered form submission.
     if (targetUserId) {
       destUser = await prisma.user.findUnique({ where: { id: targetUserId } });
-      if (!destUser || destUser.departmentId !== destDept.id) {
+      if (!destUser || destUser.departmentId !== destDept?.id) {
         return NextResponse.json({ error: "Selected user does not belong to the selected department" }, { status: 400 });
       }
     }
@@ -105,9 +107,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Upload failed: ${uploadError.message}` }, { status: 500 });
   }
 
-  const routedDetail = destUser
-    ? `Registered by ${me.fullName} and routed to ${destUser.fullName} in ${destDept.name}`
-    : `Registered by ${me.fullName} and routed to ${destDept.name}${destDept.id === gmDept.id ? " for review" : ""}`;
+  const destLabel = destDept
+    ? destUser
+      ? `${destUser.fullName} in ${destDept.name}`
+      : `${destDept.name}${destDept.id === gmDept.id ? " for review" : ""}`
+    : `${destUser?.fullName} directly`;
+  const routedDetail = `Registered by ${me.fullName} and routed to ${destLabel}`;
 
   // --- Create document + first hop + audit trail ---
   const document = await prisma.$transaction(async (tx) => {
@@ -128,7 +133,7 @@ export async function POST(req: NextRequest) {
           create: {
             sequence: 1,
             fromDeptId: me.departmentId ?? null,
-            toDeptId: destDept.id,
+            toDeptId: destDept?.id ?? null,
             assignedUserId: destUser?.id ?? null,
             status: "PENDING",
           },
@@ -149,7 +154,7 @@ export async function POST(req: NextRequest) {
     document.routes[0].id,
     document.referenceNumber,
     document.subject,
-    destDept.name,
+    destDept?.name ?? "you",
     destUser?.id
   ).catch(() => {});
 
