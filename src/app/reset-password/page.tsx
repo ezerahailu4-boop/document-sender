@@ -48,8 +48,8 @@ export default function ResetPasswordPage() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-white">
-            <TafLogo size={26} />
+          <div className="mb-3 flex h-16 w-16 items-center justify-center">
+            <TafLogo size={64} />
           </div>
           <h1 className="text-xl font-semibold text-foreground">Set a new password</h1>
         </div>

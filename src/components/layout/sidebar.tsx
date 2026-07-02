@@ -117,8 +117,8 @@ function BrandHeader({ onClose }: { onClose?: () => void }) {
   return (
     <div className="flex items-center justify-between border-b border-border px-5 py-5">
       <div className="flex items-center gap-2.5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground">
-          <TafLogo size={20} />
+        <div className="flex h-9 w-9 items-center justify-center">
+          <TafLogo size={36} />
         </div>
         <div>
           <p className="text-sm font-semibold leading-tight text-foreground">TAF Energies</p>
