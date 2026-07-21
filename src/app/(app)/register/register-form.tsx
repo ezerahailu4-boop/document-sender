@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select-native";
 import { RefNumber } from "@/components/ui/ref-number";
 import {
   UploadCloud,
@@ -15,17 +14,8 @@ import {
   Image as ImageIcon,
   FileType2,
   Crown,
-  Building2,
-  UserSearch,
-  Search,
-  User as UserIcon,
 } from "lucide-react";
 import { ACCEPTED_FILE_EXTENSIONS, ACCEPTED_FILE_LABEL } from "@/lib/file-type";
-import { cn } from "@/lib/utils";
-
-type Dept = { id: string; name: string; isGmOffice: boolean };
-type DeptUser = { id: string; fullName: string; role: string };
-type RoutableUser = { id: string; fullName: string; role: string; departmentId: string | null; departmentName: string };
 
 function FilePreviewIcon({ name }: { name: string }) {
   const ext = name.split(".").pop()?.toLowerCase() ?? "";
@@ -34,15 +24,12 @@ function FilePreviewIcon({ name }: { name: string }) {
   return <FileText className="text-primary" size={28} />;
 }
 
-type RouteMode = "gm" | "department" | "person";
-
 export function RegisterForm({
   gmDeptName,
-  departments,
   canViewLedger,
 }: {
   gmDeptName: string | null;
-  departments: Dept[];
+  departments: { id: string; name: string; isGmOffice: boolean }[];
   canViewLedger: boolean;
 }) {
   const router = useRouter();
@@ -52,65 +39,12 @@ export function RegisterForm({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<{ referenceNumber: string; destName: string } | null>(null);
 
-  const [routeMode, setRouteMode] = useState<RouteMode>("gm");
-
-  // "department" mode state
-  const [targetDeptId, setTargetDeptId] = useState("");
-  const [targetUserId, setTargetUserId] = useState("");
-  const [deptUsers, setDeptUsers] = useState<DeptUser[]>([]);
-  const [loadingUsers, setLoadingUsers] = useState(false);
-
-  // "person" mode state — search across every registered user directly
-  const [routableUsers, setRoutableUsers] = useState<RoutableUser[]>([]);
-  const [selectedPerson, setSelectedPerson] = useState<RoutableUser | null>(null);
-  const [personQuery, setPersonQuery] = useState("");
-
-  const nonGmDepartments = departments.filter((d) => !d.isGmOffice);
-
-  useEffect(() => {
-    if (routeMode !== "department" || !targetDeptId) {
-      setDeptUsers([]);
-      setTargetUserId("");
-      return;
-    }
-    setLoadingUsers(true);
-    fetch(`/api/departments/${targetDeptId}/users`)
-      .then((r) => r.json())
-      .then((data) => setDeptUsers(data.users ?? []))
-      .finally(() => setLoadingUsers(false));
-    setTargetUserId("");
-  }, [routeMode, targetDeptId]);
-
-  useEffect(() => {
-    if (routeMode === "person" && routableUsers.length === 0) {
-      fetch("/api/users/routable")
-        .then((r) => r.json())
-        .then((data) => setRoutableUsers(data.users ?? []));
-    }
-  }, [routeMode, routableUsers.length]);
-
-  const filteredPeople = useMemo(() => {
-    if (!personQuery.trim()) return routableUsers.slice(0, 8);
-    const q = personQuery.toLowerCase();
-    return routableUsers
-      .filter((u) => u.fullName.toLowerCase().includes(q) || u.departmentName.toLowerCase().includes(q))
-      .slice(0, 8);
-  }, [personQuery, routableUsers]);
-
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
 
     if (!file) {
       setError("Attach the scanned document before submitting.");
-      return;
-    }
-    if (routeMode === "department" && !targetDeptId) {
-      setError("Choose a destination department, or switch to another routing option.");
-      return;
-    }
-    if (routeMode === "person" && !selectedPerson) {
-      setError("Search for and select a person to route this document to.");
       return;
     }
 
@@ -122,13 +56,6 @@ export function RegisterForm({
     formData.set("receivedDate", (form.elements.namedItem("receivedDate") as HTMLInputElement).value);
     formData.set("file", file);
 
-    if (routeMode === "department") {
-      formData.set("targetDeptId", targetDeptId);
-      if (targetUserId) formData.set("targetUserId", targetUserId);
-    } else if (routeMode === "person" && selectedPerson) {
-      formData.set("targetUserId", selectedPerson.id);
-    }
-
     setLoading(true);
     try {
       const res = await fetch("/api/documents", { method: "POST", body: formData });
@@ -138,15 +65,7 @@ export function RegisterForm({
         setLoading(false);
         return;
       }
-      const destName =
-        routeMode === "person"
-          ? (selectedPerson?.fullName ?? "the selected person")
-          : routeMode === "department"
-          ? (targetUserId ? deptUsers.find((u) => u.id === targetUserId)?.fullName : null) ??
-            departments.find((d) => d.id === targetDeptId)?.name ??
-            "the selected department"
-          : gmDeptName ?? "the GM's office";
-      setSuccess({ referenceNumber: data.referenceNumber, destName });
+      setSuccess({ referenceNumber: data.referenceNumber, destName: gmDeptName ?? "the GM's office" });
     } catch {
       setError("Network error — please check your connection and try again.");
       setLoading(false);
@@ -157,11 +76,6 @@ export function RegisterForm({
     setSuccess(null);
     setFile(null);
     setLoading(false);
-    setRouteMode("gm");
-    setTargetDeptId("");
-    setTargetUserId("");
-    setSelectedPerson(null);
-    setPersonQuery("");
   }
 
   if (success) {
@@ -244,135 +158,18 @@ export function RegisterForm({
 
       <div className="border-t border-border pt-5">
         <Label className="mb-2 block">Route this document to *</Label>
-        <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
-          <button
-            type="button"
-            onClick={() => setRouteMode("gm")}
-            className={cn(
-              "flex items-center gap-3 rounded-md border p-3 text-left transition-colors",
-              routeMode === "gm" ? "border-primary bg-accent" : "border-border hover:border-primary/40"
-            )}
-          >
-            <Crown className={routeMode === "gm" ? "text-primary" : "text-muted-foreground"} size={18} />
-            <div>
-              <p className="text-sm font-medium text-foreground">GM&apos;s Office</p>
-              <p className="text-xs text-muted-foreground">Default — reviews and forwards it on</p>
-            </div>
-          </button>
-          <button
-            type="button"
-            onClick={() => setRouteMode("department")}
-            className={cn(
-              "flex items-center gap-3 rounded-md border p-3 text-left transition-colors",
-              routeMode === "department" ? "border-primary bg-accent" : "border-border hover:border-primary/40"
-            )}
-          >
-            <Building2 className={routeMode === "department" ? "text-primary" : "text-muted-foreground"} size={18} />
-            <div>
-              <p className="text-sm font-medium text-foreground">Choose a department</p>
-              <p className="text-xs text-muted-foreground">Skip the GM, send to a dept</p>
-            </div>
-          </button>
-          <button
-            type="button"
-            onClick={() => setRouteMode("person")}
-            className={cn(
-              "flex items-center gap-3 rounded-md border p-3 text-left transition-colors",
-              routeMode === "person" ? "border-primary bg-accent" : "border-border hover:border-primary/40"
-            )}
-          >
-            <UserSearch className={routeMode === "person" ? "text-primary" : "text-muted-foreground"} size={18} />
-            <div>
-              <p className="text-sm font-medium text-foreground">Choose a person</p>
-              <p className="text-xs text-muted-foreground">Search any registered user</p>
-            </div>
-          </button>
+        <div className="flex items-center gap-3 rounded-md border border-primary bg-accent p-3">
+          <Crown className="text-primary" size={18} />
+          <div>
+            <p className="text-sm font-medium text-foreground">GM&apos;s Office</p>
+            <p className="text-xs text-muted-foreground">Every registered document is routed here for review</p>
+          </div>
         </div>
-
-        {routeMode === "department" && (
-          <div className="space-y-3 rounded-md border border-border bg-background p-3">
-            <div>
-              <Label htmlFor="targetDept">Department *</Label>
-              <Select id="targetDept" value={targetDeptId} onChange={(e) => setTargetDeptId(e.target.value)} required>
-                <option value="">Select department…</option>
-                {nonGmDepartments.map((d) => (
-                  <option key={d.id} value={d.id}>{d.name}</option>
-                ))}
-              </Select>
-            </div>
-            {targetDeptId && (
-              <div>
-                <Label htmlFor="targetUser">Specific person (optional)</Label>
-                <Select
-                  id="targetUser"
-                  value={targetUserId}
-                  onChange={(e) => setTargetUserId(e.target.value)}
-                  disabled={loadingUsers}
-                >
-                  <option value="">Anyone in this department</option>
-                  {deptUsers.map((u) => (
-                    <option key={u.id} value={u.id}>{u.fullName}</option>
-                  ))}
-                </Select>
-                {loadingUsers && <p className="mt-1 text-xs text-muted-foreground">Loading people…</p>}
-              </div>
-            )}
-          </div>
-        )}
-
-        {routeMode === "person" && (
-          <div className="rounded-md border border-border bg-background p-3">
-            {selectedPerson ? (
-              <div className="flex items-center justify-between rounded-md border border-primary/40 bg-accent px-3 py-2">
-                <div className="flex items-center gap-2">
-                  <UserIcon size={14} className="text-primary" />
-                  <span className="text-sm font-medium text-foreground">{selectedPerson.fullName}</span>
-                  <span className="text-xs text-muted-foreground">— {selectedPerson.departmentName}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => { setSelectedPerson(null); setPersonQuery(""); }}
-                  className="text-xs text-muted-foreground underline hover:text-foreground"
-                >
-                  Change
-                </button>
-              </div>
-            ) : (
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={personQuery}
-                  onChange={(e) => setPersonQuery(e.target.value)}
-                  placeholder="Search for a person by name or department…"
-                  className="pl-9"
-                />
-                {(personQuery.trim() || routableUsers.length > 0) && (
-                  <div className="mt-1 max-h-56 overflow-y-auto rounded-md border border-border bg-popover shadow-lg">
-                    {filteredPeople.length === 0 && (
-                      <p className="px-3 py-2 text-sm text-muted-foreground">No matching users.</p>
-                    )}
-                    {filteredPeople.map((u) => (
-                      <button
-                        key={u.id}
-                        type="button"
-                        onClick={() => { setSelectedPerson(u); setPersonQuery(""); }}
-                        className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-accent"
-                      >
-                        <span className="font-medium text-foreground">{u.fullName}</span>
-                        <span className="text-xs text-muted-foreground">{u.departmentName}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       <div className="flex flex-col items-stretch gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs text-muted-foreground">A reference number is generated automatically on submit.</p>
-        <Button type="submit" disabled={loading || (routeMode === "gm" && !gmDeptName)} className="w-full sm:w-auto">
+        <Button type="submit" disabled={loading || !gmDeptName} className="w-full sm:w-auto">
           {loading ? "Registering…" : "Register & route"}
         </Button>
       </div>
