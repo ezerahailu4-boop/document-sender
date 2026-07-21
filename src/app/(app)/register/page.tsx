@@ -29,7 +29,12 @@ export default async function RegisterPage() {
               GM&apos;s office in Departments settings before documents can be registered.
             </div>
           )}
-          <RegisterForm gmDeptName={gmDept?.name ?? null} departments={departments} canViewLedger={user.role === "REGISTRY_STAFF" || user.role === "ADMIN"} />
+          <RegisterForm
+            gmDeptName={gmDept?.name ?? null}
+            departments={departments}
+            canViewLedger={user.role === "REGISTRY_STAFF" || user.role === "ADMIN"}
+            isRegistryStaff={user.role === "REGISTRY_STAFF"}
+          />
         </div>
       </main>
     </>
