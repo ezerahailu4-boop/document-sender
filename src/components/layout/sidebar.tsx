@@ -15,6 +15,7 @@ import {
   Search,
   Crown,
   MapPin,
+  BarChart3,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -30,6 +31,7 @@ const NAV = [
 
 const ADMIN_NAV = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
+  { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/admin/routing", label: "Document Routing", icon: MapPin },
   { href: "/admin/departments", label: "Departments", icon: Building2 },
   { href: "/admin/users", label: "Users", icon: Users },

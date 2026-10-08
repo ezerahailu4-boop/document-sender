@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { trackAnalyticsEvent } from "@/lib/analytics";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: routeId } = await params;
@@ -14,7 +15,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const body = await req.json().catch(() => ({}));
   const note: string | undefined = body?.note;
 
-  const route = await prisma.documentRoute.findUnique({ where: { id: routeId }, include: { toDept: true } });
+  const route = await prisma.documentRoute.findUnique({ where: { id: routeId }, include: { toDept: true, document: true } });
   if (!route) return NextResponse.json({ error: "Route not found" }, { status: 404 });
   if (route.status === "FORWARDED" || route.status === "COMPLETED") {
     return NextResponse.json({ error: "This document has already moved on" }, { status: 409 });
@@ -47,6 +48,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         detail: `Marked complete by ${me.fullName}${route.toDept ? ` in ${route.toDept.name}` : ""}`,
       },
     });
+
+    // Track analytics
+    await trackAnalyticsEvent("route_completed", route.documentId, me.id, { routeId, note });
   });
 
   return NextResponse.json({ ok: true });

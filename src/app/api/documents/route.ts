@@ -114,9 +114,9 @@ export async function POST(req: NextRequest) {
     : `${destUser?.fullName} directly`;
   const routedDetail = `Registered by ${me.fullName} and routed to ${destLabel}`;
 
-  // --- Create document + first hop + audit trail ---
+  // --- Create document + first version + first hop + audit trail ---
   const document = await prisma.$transaction(async (tx) => {
-    return tx.document.create({
+    const createdDocument = await tx.document.create({
       data: {
         referenceNumber,
         senderName,
@@ -148,6 +148,21 @@ export async function POST(req: NextRequest) {
       },
       include: { routes: true },
     });
+
+    // Create the initial version of the document
+    await tx.documentVersion.create({
+      data: {
+        documentId: createdDocument.id,
+        versionNum: 1,
+        filePath: storagePath,
+        fileSizeBytes: file.size,
+        mimeType: detected.mimeType,
+        createdById: me.id,
+        notes: "Initial version"
+      }
+    });
+
+    return createdDocument;
   });
 
   await notifyRoute(

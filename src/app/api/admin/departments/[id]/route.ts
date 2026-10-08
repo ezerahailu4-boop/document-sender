@@ -16,7 +16,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!me) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const { id } = await params;
 
-  const { name, code, isGmOffice } = await req.json();
+  const { name, code, isGmOffice, isActive } = await req.json().catch(() => ({}));
 
   if (isGmOffice) {
     await prisma.department.updateMany({ where: { isGmOffice: true, NOT: { id } }, data: { isGmOffice: false } });
@@ -25,9 +25,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const dept = await prisma.department.update({
     where: { id },
     data: {
-      ...(name ? { name } : {}),
-      ...(code ? { code: code.toUpperCase() } : {}),
-      ...(isGmOffice !== undefined ? { isGmOffice } : {}),
+      ...(name ? { name: name.trim() } : {}),
+      ...(code ? { code: code.trim().toUpperCase() } : {}),
+      ...(isGmOffice !== undefined ? { isGmOffice: !!isGmOffice } : {}),
+      ...(isActive !== undefined ? { isActive: !!isActive } : {}),
     },
   });
 
@@ -39,10 +40,17 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (!me) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const { id } = await params;
 
-  const inUse = await prisma.documentRoute.findFirst({ where: { toDeptId: id } });
-  if (inUse) {
+  // Check all foreign key dependencies before attempting hard delete
+  const [routeTo, routeFrom, createdDoc, hasUsers] = await Promise.all([
+    prisma.documentRoute.findFirst({ where: { toDeptId: id } }),
+    prisma.documentRoute.findFirst({ where: { fromDeptId: id } }),
+    prisma.document.findFirst({ where: { originDeptId: id } }),
+    prisma.user.findFirst({ where: { departmentId: id } }),
+  ]);
+
+  if (routeTo || routeFrom || createdDoc || hasUsers) {
     return NextResponse.json(
-      { error: "This department has document history and cannot be deleted. Consider renaming it instead." },
+      { error: "This department has assigned users or document history. Please deactivate it instead of deleting." },
       { status: 409 }
     );
   }

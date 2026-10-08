@@ -48,6 +48,7 @@ model Department {
   name        String   @unique
   code        String   @unique // short code used in reference numbers, e.g. "IT", "FIN"
   isGmOffice  Boolean  @default(false) // exactly one department should be flagged true — the GM's office, the mandatory first stop
+  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
 
   users           User[]
@@ -76,6 +77,12 @@ model User {
   routesAssigned      DocumentRoute[]  @relation("AssignedTo")
   routeActions        RouteAction[]
   notifications       Notification[]
+  comments            Comment[]
+  documentVersions    DocumentVersion[]
+  savedSearches       SavedSearch[]
+  analyticsEvents     AnalyticsEvent[]
+  appliedTags         DocumentTag[]
+  bulkOperations      BulkOperation[]
 
   @@index([departmentId])
   @@map("users")
@@ -117,8 +124,14 @@ model Document {
   updatedAt DateTime @updatedAt
   completedAt DateTime?
 
-  routes       DocumentRoute[]
-  auditEvents  AuditEvent[]
+  routes            DocumentRoute[]
+  auditEvents       AuditEvent[]
+  versions          DocumentVersion[]
+  comments          Comment[]
+  customValues      DocumentCustomValue[]
+  workflowInstances DocumentWorkflowInstance[]
+  tags              DocumentTag[]
+  analyticsEvents   AnalyticsEvent[]
 
   @@index([status])
   @@index([senderName])
@@ -153,6 +166,7 @@ model DocumentRoute {
 
   actions       RouteAction[]
   notifications Notification[]
+  routeComments Comment[]
 
   @@unique([documentId, sequence])
   @@index([toDeptId, status])
@@ -189,6 +203,25 @@ model AuditEvent {
   @@map("audit_events")
 }
 
+// Collaboration system - Comments on documents and routes
+model Comment {
+  id        String   @id @default(cuid())
+  documentId String
+  document  Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  routeId   String? // Optional - if comment is on a specific route/hop
+  route     DocumentRoute? @relation(fields: [routeId], references: [id])
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([documentId])
+  @@index([routeId])
+  @@index([authorId])
+  @@map("comments")
+}
+
 model Notification {
   id        String              @id @default(cuid())
   userId    String
@@ -204,4 +237,226 @@ model Notification {
 
   @@index([userId, readAt])
   @@map("notifications")
+}
+
+// Document versioning system
+model DocumentVersion {
+  id         String   @id @default(cuid())
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  versionNum Int      @default(1) // Version number for this document
+  filePath   String   // Path to the file in storage
+  fileSizeBytes Int?
+  mimeType   String?
+  createdById String
+  createdBy  User     @relation(fields: [createdById], references: [id])
+  createdAt  DateTime @default(now())
+  notes      String?  // Optional notes about this version
+
+  @@unique([documentId, versionNum])
+  @@index([documentId])
+  @@index([createdById])
+  @@map("document_versions")
+}
+
+// Custom fields system for documents
+model CustomField {
+  id          String   @id @default(cuid())
+  name        String   // Field name (e.g., "Contract Value", "Department Code")
+  fieldType   String   // Type: "text", "number", "date", "select", "checkbox"
+  options     String?  // JSON string of options for select/checkbox types
+  isRequired  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  documentCustomValues DocumentCustomValue[]
+
+  @@index([name])
+  @@map("custom_fields")
+}
+
+model DocumentCustomValue {
+  id           String   @id @default(cuid())
+  documentId   String
+  document     Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  customFieldId String
+  customField  CustomField @relation(fields: [customFieldId], references: [id])
+  value        String   // Stored as string, parsed based on fieldType
+  updatedAt    DateTime @updatedAt
+
+  @@unique([documentId, customFieldId])
+  @@index([documentId])
+  @@index([customFieldId])
+  @@map("document_custom_values")
+}
+
+// Workflow flexibility system
+model WorkflowDefinition {
+  id          String   @id @default(cuid())
+  name        String   // Name of the workflow (e.g., "Standard Approval", "Invoice Processing")
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  rules       WorkflowRule[]
+  instances   DocumentWorkflowInstance[]
+
+  @@index([name])
+  @@map("workflow_definitions")
+}
+
+model WorkflowRule {
+  id          String   @id @default(cuid())
+  workflowId  String
+  workflow    WorkflowDefinition @relation(fields: [workflowId], references: [id])
+  ruleOrder   Int      // Order in which rules are applied
+  condition   String   // JSON condition (e.g., "{field: 'subject', operator: 'contains', value: 'invoice'}")
+  actionType  String   // Type: "route_to_dept", "route_to_user", "set_priority", "notify"
+  actionConfig String? // JSON configuration for the action
+  createdAt   DateTime @default(now())
+
+  @@index([workflowId])
+  @@index([ruleOrder])
+  @@map("workflow_rules")
+}
+
+model DocumentWorkflowInstance {
+  id           String   @id @default(cuid())
+  documentId   String
+  document     Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  workflowId   String
+  workflow     WorkflowDefinition @relation(fields: [workflowId], references: [id])
+  currentStep  Int      @default(0) // Current step in the workflow
+  status       String   // "active", "completed", "cancelled"
+  startedAt    DateTime @default(now())
+  completedAt  DateTime?
+  createdAt    DateTime @default(now())
+
+  @@index([documentId])
+  @@index([workflowId])
+  @@index([status])
+  @@map("document_workflow_instances")
+}
+
+// Reporting and analytics enhancements
+model SavedSearch {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  name        String   // Name of the saved search
+  query       String   // The search query
+  filters     String?  // JSON string of filters (date ranges, status, etc.)
+  isPublic    Boolean  @default(false) // Whether this search is visible to others
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([name])
+  @@map("saved_searches")
+}
+
+model AnalyticsEvent {
+  id         String   @id @default(cuid())
+  documentId String?
+  document   Document? @relation(fields: [documentId], references: [id])
+  userId     String?
+  user       User?     @relation(fields: [userId], references: [id])
+  eventType  String   // Type: "document_registered", "route_opened", "route_completed", etc.
+  eventData  String?  // JSON string with additional event data
+  timestamp  DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([documentId])
+  @@index([userId])
+  @@index([eventType])
+  @@index([timestamp])
+  @@index([createdAt])
+  @@map("analytics_events")
+}
+
+// User experience enhancements - Tagging system
+model Tag {
+  id          String   @id @default(cuid())
+  name        String   @unique // Tag name (e.g., "Urgent", "Follow-up", "Legal")
+  color       String?  // Hex color code for UI display (e.g., "#FF0000")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  documents   DocumentTag[]
+
+  @@index([name])
+  @@map("tags")
+}
+
+model DocumentTag {
+  id         String   @id @default(cuid())
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  tagId      String
+  tag        Tag      @relation(fields: [tagId], references: [id])
+  appliedAt  DateTime @default(now())
+  appliedById String
+  appliedBy  User     @relation(fields: [appliedById], references: [id])
+
+  @@unique([documentId, tagId])
+  @@index([documentId])
+  @@index([tagId])
+  @@map("document_tags")
+}
+
+// Integration and automation enhancements - Webhooks
+model Webhook {
+  id          String   @id @default(cuid())
+  name        String   // Name of the webhook (e.g., "Slack Notification", "ERP Sync")
+  url         String   // Target URL for the webhook
+  events      String   // JSON array of events to listen for (e.g., '["document.registered", "route.completed"]')
+  isActive    Boolean  @default(true)
+  secret      String?  // Optional secret for signature verification
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  deliveries  WebhookDelivery[]
+
+  @@index([name])
+  @@map("webhooks")
+}
+
+model WebhookDelivery {
+  id         String   @id @default(cuid())
+  webhookId  String
+  webhook    Webhook  @relation(fields: [webhookId], references: [id])
+  eventType  String   // Type of event that triggered this delivery
+  payload    String   // JSON payload sent to the webhook
+  statusCode Int?     // HTTP status code received (null if delivery failed)
+  deliveredAt DateTime @default(now())
+  attemptedAt DateTime @default(now())
+
+  @@index([webhookId])
+  @@index([eventType])
+  @@index([deliveredAt])
+  @@map("webhook_deliveries")
+}
+
+// System-wide bulk operations tracking
+model BulkOperation {
+  id          String   @id @default(cuid())
+  operationType String // Type: "archive", "export", "delete", "tag", etc.
+  status      String   @default("pending") // "pending", "processing", "completed", "failed"
+  initiatedById String
+  initiatedBy User     @relation(fields: [initiatedById], references: [id])
+  startedAt   DateTime @default(now())
+  completedAt DateTime?
+  itemCount   Int      @default(0) // Number of items processed
+  successCount Int      @default(0) // Number of successful operations
+  failureCount Int      @default(0) // Number of failed operations
+  parameters  String?  // JSON string of operation parameters
+  errorLog    String?  // JSON string of errors encountered
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([operationType])
+  @@index([status])
+  @@index([initiatedById])
+  @@map("bulk_operations")
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { trackAnalyticsEvent } from "@/lib/analytics";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: routeId } = await params;
@@ -22,13 +23,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   if (route.status === "PENDING") {
-    await prisma.$transaction([
-      prisma.documentRoute.update({
+    await prisma.$transaction(async (tx) => {
+      await tx.documentRoute.update({
         where: { id: routeId },
         data: { status: "OPENED", openedAt: new Date(), assignedUserId: me.id },
-      }),
-      prisma.routeAction.create({ data: { routeId, userId: me.id, action: "OPENED" } }),
-    ]);
+      });
+      await tx.routeAction.create({
+        data: { routeId, userId: me.id, action: "OPENED" }
+      });
+
+      // Track analytics
+      await trackAnalyticsEvent("route_opened", route.documentId, me.id, { routeId });
+    });
   }
 
   return NextResponse.json({ ok: true });
