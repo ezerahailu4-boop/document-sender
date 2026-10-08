@@ -21,15 +21,36 @@ export default function LoginForm() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-    if (signInError) {
-      setError(signInError.message);
+    try {
+      const supabase = createClient();
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) {
+        if (
+          signInError.message.toLowerCase().includes("failed to fetch") ||
+          signInError.message.toLowerCase().includes("network")
+        ) {
+          setError(
+            "Unable to connect to the authentication service. The Supabase project may be paused or unreachable. Please unpause it in your Supabase dashboard."
+          );
+        } else {
+          setError(signInError.message);
+        }
+        setLoading(false);
+        return;
+      }
+      router.push("/");
+      router.refresh();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.toLowerCase().includes("fetch")) {
+        setError(
+          "Unable to connect to the authentication service. The Supabase project may be paused or unreachable. Please unpause it in your Supabase dashboard."
+        );
+      } else {
+        setError(message || "An unexpected error occurred during sign in.");
+      }
       setLoading(false);
-      return;
     }
-    router.push("/");
-    router.refresh();
   }
 
   return (
