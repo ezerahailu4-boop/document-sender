@@ -43,15 +43,21 @@ const ADMIN_NAV = [
 function NavLinks({ role, onNavigate }: { role: string; onNavigate?: () => void }) {
   const pathname = usePathname();
 
+  const handleLinkClick = () => {
+    if (onNavigate) {
+      setTimeout(onNavigate, 120);
+    }
+  };
+
   return (
-    <nav className="flex-1 space-y-1 px-3 py-4">
+    <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
       {NAV.filter((item) => item.roles.includes(role)).map((item) => {
         const active = pathname?.startsWith(item.href);
         return (
           <Link
             key={item.href}
             href={item.href}
-            onClick={onNavigate}
+            onClick={handleLinkClick}
             className={cn(
               "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
               active ? "bg-accent text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -72,7 +78,7 @@ function NavLinks({ role, onNavigate }: { role: string; onNavigate?: () => void 
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={onNavigate}
+                onClick={handleLinkClick}
                 className={cn(
                   "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                   active ? "bg-accent text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -90,11 +96,17 @@ function NavLinks({ role, onNavigate }: { role: string; onNavigate?: () => void 
 }
 
 function SidebarFooter({ unreadCount, onNavigate }: { unreadCount: number; onNavigate?: () => void }) {
+  const handleLinkClick = () => {
+    if (onNavigate) {
+      setTimeout(onNavigate, 120);
+    }
+  };
+
   return (
-    <div className="border-t border-border px-3 py-4">
+    <div className="border-t border-border px-3 py-4 shrink-0">
       <Link
         href="/notifications"
-        onClick={onNavigate}
+        onClick={handleLinkClick}
         className="flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
       >
         <span className="flex items-center gap-3">
@@ -109,7 +121,7 @@ function SidebarFooter({ unreadCount, onNavigate }: { unreadCount: number; onNav
       </Link>
       <Link
         href="/settings"
-        onClick={onNavigate}
+        onClick={handleLinkClick}
         className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
       >
         <Settings size={18} />
@@ -120,9 +132,19 @@ function SidebarFooter({ unreadCount, onNavigate }: { unreadCount: number; onNav
 }
 
 function BrandHeader({ onClose }: { onClose?: () => void }) {
+  const handleBrandClick = () => {
+    if (onClose) {
+      setTimeout(onClose, 120);
+    }
+  };
+
   return (
-    <div className="flex items-center justify-between border-b border-border px-5 py-5">
-      <div className="flex items-center gap-2.5">
+    <div className="flex items-center justify-between border-b border-border px-5 py-5 shrink-0">
+      <Link
+        href="/dashboard"
+        onClick={handleBrandClick}
+        className="flex items-center gap-2.5 transition-opacity hover:opacity-85"
+      >
         <div className="flex h-9 w-9 items-center justify-center">
           <TafLogo size={36} />
         </div>
@@ -130,7 +152,7 @@ function BrandHeader({ onClose }: { onClose?: () => void }) {
           <p className="text-sm font-semibold leading-tight text-foreground">TAF Energies</p>
           <p className="text-xs text-muted-foreground">Doc Tracker</p>
         </div>
-      </div>
+      </Link>
       {onClose && (
         <button onClick={onClose} className="text-muted-foreground hover:text-foreground md:hidden" aria-label="Close menu">
           <X size={20} />
@@ -143,7 +165,7 @@ function BrandHeader({ onClose }: { onClose?: () => void }) {
 // Desktop: fixed sidebar, always visible at md+.
 export function Sidebar({ role, unreadCount = 0 }: { role: string; unreadCount?: number }) {
   return (
-    <aside className="hidden w-64 flex-col border-r border-border bg-card md:flex">
+    <aside className="hidden w-64 flex-col border-r border-border bg-card md:flex sticky top-0 h-screen overflow-hidden shrink-0">
       <BrandHeader />
       <NavLinks role={role} />
       <SidebarFooter unreadCount={unreadCount} />
@@ -163,17 +185,30 @@ export function MobileSidebar({
   open: boolean;
   onClose: () => void;
 }) {
+  const pathname = usePathname();
+
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [open]);
 
+  // Close automatically on route change
+  useEffect(() => {
+    if (open) {
+      onClose();
+    }
+  }, [pathname]);
+
   if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 md:hidden">
-      <div className="absolute inset-0 bg-foreground/40" onClick={onClose} />
-      <aside className="absolute inset-y-0 left-0 flex w-[85vw] max-w-72 flex-col bg-card shadow-xl">
+      <div 
+        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity" 
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <aside className="relative z-10 flex h-full w-[85vw] max-w-72 flex-col bg-card shadow-2xl overflow-hidden">
         <BrandHeader onClose={onClose} />
         <NavLinks role={role} onNavigate={onClose} />
         <SidebarFooter unreadCount={unreadCount} onNavigate={onClose} />

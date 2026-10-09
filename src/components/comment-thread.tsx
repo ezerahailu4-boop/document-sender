@@ -57,11 +57,6 @@ export function CommentThread({ documentId, routeId = null, initialComments = []
   const [me, setMe] = useState<{ id: string; fullName: string; email: string } | null>(null);
 
   useEffect(() => {
-    // Focus textarea when it mounts
-    if (textareaRef.current) {
-      textareaRef.current.focus();
-    }
-
     // Fetch current user info
     fetch("/api/user/me")
       .then(res => res.ok ? res.json() : null)
