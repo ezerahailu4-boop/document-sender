@@ -11,7 +11,8 @@ import { CommentThread } from "@/components/comment-thread";
 import { DocumentVersionHistory } from "@/components/document-version-history";
 import { CustomFieldsEditor } from "@/components/custom-fields-editor";
 import { DocumentTags } from "@/components/document-tags";
-import { ArrowRight, FileText, Mail, RefreshCw, Info, MapPin, User as UserIcon, Clock, CheckCircle2 } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft, ArrowRight, FileText, Mail, RefreshCw, Info, MapPin, User as UserIcon, Clock, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 
 export default async function DocumentDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -78,7 +79,18 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
         userRole={ROLE_LABELS[user.role]}
       />
       <main className="flex-1 overflow-y-auto p-4 md:p-6">
-        <div className="mx-auto max-w-4xl space-y-6">
+        <div className="mx-auto max-w-4xl space-y-4">
+          <div className="flex items-center justify-between">
+            <Link
+              href="/dashboard"
+              prefetch={false}
+              className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors group cursor-pointer"
+            >
+              <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-0.5" />
+              <span>Back to Master Ledger</span>
+            </Link>
+          </div>
+
           {/* Enhanced Document Header */}
           <div className="border border-border rounded-lg bg-card p-6 shadow-sm">
             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between lg:gap-6">

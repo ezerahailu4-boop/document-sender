@@ -58,9 +58,9 @@ export async function updateSession(request: NextRequest) {
       },
     });
 
-    // 2000ms timeout prevents Edge 504 MIDDLEWARE_INVOCATION_TIMEOUT
+    // 4000ms timeout prevents Edge hanging while accommodating normal serverless latency
     const timeoutPromise = new Promise<{ data: { user: null }; error: Error }>((_, reject) => {
-      setTimeout(() => reject(new Error("Supabase auth timeout")), 2000);
+      setTimeout(() => reject(new Error("Supabase auth timeout")), 4000);
     });
 
     const { data: { user }, error } = await Promise.race([
@@ -68,7 +68,10 @@ export async function updateSession(request: NextRequest) {
       timeoutPromise,
     ]);
 
-    if ((!user || error) && !pathname.startsWith("/api/")) {
+    // If getUser explicitly returned an auth error (not timeout) and no user:
+    // Only redirect full page GET requests, never RSC prefetch or API requests
+    const isRsc = request.headers.get("rsc") === "1" || request.nextUrl.searchParams.has("_rsc");
+    if (error && !user && !pathname.startsWith("/api/") && !isRsc) {
       const loginUrl = request.nextUrl.clone();
       loginUrl.pathname = "/login";
       return NextResponse.redirect(loginUrl);
@@ -76,13 +79,9 @@ export async function updateSession(request: NextRequest) {
 
     return response;
   } catch (err) {
-    console.error("[middleware] Session refresh error or timeout:", err);
-    // On network failure or timeout, redirect protected pages to login instead of hanging with 504
-    if (!pathname.startsWith("/api/")) {
-      const loginUrl = request.nextUrl.clone();
-      loginUrl.pathname = "/login";
-      return NextResponse.redirect(loginUrl);
-    }
+    console.warn("[middleware] Session refresh error or timeout, continuing with existing session:", err);
+    // On network failure or timeout, allow request to pass through to the page Server Component
+    // where getCurrentUser() handles auth with full Node.js runtime retry/error handling.
     return response;
   }
 }
