@@ -17,8 +17,12 @@ type Result = {
   currentDept: string | null;
 };
 
-export function FindByReference() {
-  const [query, setQuery] = useState("");
+type FindByReferenceProps = {
+  initialQuery?: string;
+};
+
+export function FindByReference({ initialQuery }: FindByReferenceProps) {
+  const [query, setQuery] = useState(initialQuery || "");
   const [results, setResults] = useState<Result[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);

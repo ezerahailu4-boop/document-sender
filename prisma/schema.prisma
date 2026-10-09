@@ -78,6 +78,8 @@ model User {
   routeActions        RouteAction[]
   notifications       Notification[]
   comments            Comment[]
+  reactionsMade       CommentReaction[]
+  mentionsMade        CommentMention[]
   documentVersions    DocumentVersion[]
   savedSearches       SavedSearch[]
   analyticsEvents     AnalyticsEvent[]
@@ -213,6 +215,8 @@ model Comment {
   authorId  String
   author    User     @relation(fields: [authorId], references: [id])
   content   String
+  reactions CommentReaction[]
+  mentions  CommentMention[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -221,6 +225,38 @@ model Comment {
   @@index([authorId])
   @@map("comments")
 }
+
+// Enhanced commenting features - Reactions and Mentions
+model CommentReaction {
+  id        String   @id @default(cuid())
+  commentId String
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  emoji     String   // The emoji used for reaction (e.g., "👍", "❤️", "🎉")
+  createdAt DateTime @default(now())
+
+  @@unique([commentId, userId, emoji]) // User can only react once with same emoji to a comment
+  @@index([commentId])
+  @@index([userId])
+  @@map("comment_reactions")
+}
+
+model CommentMention {
+  id        String   @id @default(cuid())
+  commentId String
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([commentId, userId]) // User can only be mentioned once per comment
+  @@index([commentId])
+  @@index([userId])
+  @@map("comment_mentions")
+}
+
+// Update User model to include inverse relations for mentions and reactions
 
 model Notification {
   id        String              @id @default(cuid())

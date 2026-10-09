@@ -40,11 +40,72 @@ export async function PUT(
 
   const updated = await prisma.comment.update({
     where: { id: commentId },
-    data: { content: content.trim() },
+    data: { 
+      content: content.trim(),
+      updatedAt: new Date()
+    },
     include: { author: { select: { id: true, fullName: true, email: true } } },
   });
 
-  return NextResponse.json({ comment: updated });
+  // Re-process mentions
+  await prisma.commentMention.deleteMany({ where: { commentId } });
+  await processMentions(commentId, content.trim(), me.id);
+
+  // Fetch updated comment with reactions and mentions
+  const [reactions, mentions] = await Promise.all([
+    prisma.commentReaction.findMany({
+      where: { commentId },
+      include: { user: { select: { id: true, fullName: true, email: true } } },
+      orderBy: { createdAt: "asc" }
+    }),
+    prisma.commentMention.findMany({
+      where: { commentId },
+      include: { user: { select: { id: true, fullName: true, email: true } } },
+      orderBy: { createdAt: "asc" }
+    })
+  ]);
+
+  return NextResponse.json({
+    comment: {
+      ...updated,
+      reactions,
+      mentions
+    }
+  });
+}
+
+async function processMentions(commentId: string, content: string, authorId: string) {
+  const mentionRegex = /@(\w+)/g;
+  const matches = [...content.matchAll(mentionRegex)];
+  const mentionedUsernames = [...new Set(matches.map(m => m[1]))];
+
+  if (mentionedUsernames.length === 0) return;
+
+  const limitedMentions = mentionedUsernames.slice(0, 5);
+
+  const mentionPromises = limitedMentions.map(async (username) => {
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: { startsWith: `${username}@`, mode: "insensitive" } },
+          { email: { contains: `${username}@`, mode: "insensitive" } },
+          { fullName: { contains: username, mode: "insensitive" } }
+        ]
+      }
+    });
+
+    if (user && user.id !== authorId) {
+      return prisma.commentMention.create({
+        data: {
+          commentId,
+          userId: user.id
+        }
+      });
+    }
+    return null;
+  });
+
+  await Promise.all(mentionPromises.filter(Boolean));
 }
 
 export async function DELETE(

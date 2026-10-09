@@ -17,6 +17,7 @@ import {
   MapPin,
   BarChart3,
   X,
+  Share2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TafLogo } from "@/components/logo";
@@ -36,6 +37,7 @@ const ADMIN_NAV = [
   { href: "/admin/departments", label: "Departments", icon: Building2 },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/audit-log", label: "Audit Log", icon: ClipboardList },
+  { href: "/admin/saved-searches", label: "Saved Searches", icon: Share2 },
 ];
 
 function NavLinks({ role, onNavigate }: { role: string; onNavigate?: () => void }) {

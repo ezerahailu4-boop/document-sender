@@ -23,7 +23,10 @@ export async function GET(req: NextRequest) {
         { isPublic: true }
       ]
     },
-    orderBy: { name: "asc" }
+    include: {
+      user: { select: { id: true, fullName: true } }
+    },
+    orderBy: [{ updatedAt: 'desc' }, { name: 'asc' }]
   });
 
   return NextResponse.json({ savedSearches });
