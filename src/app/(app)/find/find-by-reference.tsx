@@ -28,21 +28,25 @@ export function FindByReference({ initialQuery }: FindByReferenceProps) {
   const [searched, setSearched] = useState(false);
 
   useEffect(() => {
-    if (!query.trim()) {
-      setResults([]);
-      setSearched(false);
-      return;
-    }
-    setLoading(true);
+    const trimmed = query.trim();
+    if (!trimmed) return;
+
     const handle = setTimeout(async () => {
-      const res = await fetch(`/api/documents/lookup?ref=${encodeURIComponent(query.trim())}`);
-      const data = await res.json();
-      setResults(data.documents ?? []);
-      setLoading(false);
-      setSearched(true);
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/documents/lookup?ref=${encodeURIComponent(trimmed)}`);
+        const data = await res.json();
+        setResults(data.documents ?? []);
+        setSearched(true);
+      } finally {
+        setLoading(false);
+      }
     }, 300);
     return () => clearTimeout(handle);
   }, [query]);
+
+  const activeResults = query.trim() ? results : [];
+  const hasSearched = query.trim() ? searched : false;
 
   return (
     <div className="space-y-4">
@@ -59,14 +63,14 @@ export function FindByReference({ initialQuery }: FindByReferenceProps) {
 
       {loading && <p className="text-sm text-muted-foreground">Searching…</p>}
 
-      {!loading && searched && results.length === 0 && (
+      {!loading && hasSearched && activeResults.length === 0 && (
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card py-12 text-center">
           <FileStack className="mb-3 text-muted-foreground" size={28} />
           <p className="text-sm text-muted-foreground">No documents match &ldquo;{query}&rdquo;.</p>
         </div>
       )}
 
-      {!loading && results.length > 0 && (
+      {!loading && activeResults.length > 0 && (
         <div className="space-y-2">
           {results.map((doc) => {
             const cfg = DOCUMENT_STATUS_CONFIG[doc.status];

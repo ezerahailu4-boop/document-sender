@@ -19,6 +19,8 @@ import {
   X,
   Share2,
   Loader2,
+  Tag,
+  ListFilter,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TafLogo } from "@/components/logo";
@@ -37,6 +39,8 @@ const ADMIN_NAV = [
   { href: "/admin/routing", label: "Document Routing", icon: MapPin },
   { href: "/admin/departments", label: "Departments", icon: Building2 },
   { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/tags", label: "Tags", icon: Tag },
+  { href: "/admin/custom-fields", label: "Custom Fields", icon: ListFilter },
   { href: "/admin/audit-log", label: "Audit Log", icon: ClipboardList },
   { href: "/admin/saved-searches", label: "Saved Searches", icon: Share2 },
 ];
@@ -45,9 +49,7 @@ function NavLinks({ role, onNavigate }: { role: string; onNavigate?: () => void 
   const pathname = usePathname();
   const [navigatingHref, setNavigatingHref] = useState<string | null>(null);
 
-  useEffect(() => {
-    setNavigatingHref(null);
-  }, [pathname]);
+  const activeNavigatingHref = navigatingHref === pathname ? null : navigatingHref;
 
   const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     if (onNavigate) {
@@ -61,8 +63,6 @@ function NavLinks({ role, onNavigate }: { role: string; onNavigate?: () => void 
 
     setNavigatingHref(href);
 
-    // Guaranteed fallback: If Next.js client router does not commit transition within 2000ms,
-    // force browser navigation so the user is never stuck on a page.
     setTimeout(() => {
       if (window.location.pathname !== href) {
         window.location.assign(href);
@@ -74,7 +74,7 @@ function NavLinks({ role, onNavigate }: { role: string; onNavigate?: () => void 
     <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
       {NAV.filter((item) => item.roles.includes(role)).map((item) => {
         const active = pathname?.startsWith(item.href);
-        const isNavigating = navigatingHref === item.href;
+        const isNavigating = activeNavigatingHref === item.href;
         return (
           <Link
             key={item.href}
@@ -102,7 +102,7 @@ function NavLinks({ role, onNavigate }: { role: string; onNavigate?: () => void 
           <p className="mt-5 mb-1 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Admin</p>
           {ADMIN_NAV.map((item) => {
             const active = item.href === "/admin" ? pathname === "/admin" : pathname?.startsWith(item.href);
-            const isNavigating = navigatingHref === item.href;
+            const isNavigating = activeNavigatingHref === item.href;
             return (
               <Link
                 key={item.href}
@@ -134,9 +134,7 @@ function SidebarFooter({ unreadCount, onNavigate }: { unreadCount: number; onNav
   const pathname = usePathname();
   const [navigatingHref, setNavigatingHref] = useState<string | null>(null);
 
-  useEffect(() => {
-    setNavigatingHref(null);
-  }, [pathname]);
+  const activeNavigatingHref = navigatingHref === pathname ? null : navigatingHref;
 
   const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     if (onNavigate) {
@@ -165,11 +163,11 @@ function SidebarFooter({ unreadCount, onNavigate }: { unreadCount: number; onNav
         onClick={(e) => handleLinkClick(e, "/notifications")}
         className={cn(
           "flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground cursor-pointer transition-colors",
-          navigatingHref === "/notifications" && "opacity-80 text-primary"
+          activeNavigatingHref === "/notifications" && "opacity-80 text-primary"
         )}
       >
         <span className="flex items-center gap-3">
-          {navigatingHref === "/notifications" ? (
+          {activeNavigatingHref === "/notifications" ? (
             <Loader2 size={18} className="animate-spin text-primary shrink-0" />
           ) : (
             <Bell size={18} className="shrink-0" />
@@ -188,10 +186,10 @@ function SidebarFooter({ unreadCount, onNavigate }: { unreadCount: number; onNav
         onClick={(e) => handleLinkClick(e, "/settings")}
         className={cn(
           "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground cursor-pointer transition-colors",
-          navigatingHref === "/settings" && "opacity-80 text-primary"
+          activeNavigatingHref === "/settings" && "opacity-80 text-primary"
         )}
       >
-        {navigatingHref === "/settings" ? (
+        {activeNavigatingHref === "/settings" ? (
           <Loader2 size={18} className="animate-spin text-primary shrink-0" />
         ) : (
           <Settings size={18} className="shrink-0" />
@@ -206,9 +204,7 @@ function BrandHeader({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const [isNavigating, setIsNavigating] = useState(false);
 
-  useEffect(() => {
-    setIsNavigating(false);
-  }, [pathname]);
+  const activeIsNavigating = isNavigating && pathname !== "/dashboard";
 
   const handleBrandClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (onClose) {
@@ -230,37 +226,52 @@ function BrandHeader({ onClose }: { onClose?: () => void }) {
   };
 
   return (
-    <div className="flex items-center justify-between border-b border-border px-5 py-5 shrink-0">
+    <div className="flex h-16 items-center justify-between border-b border-border px-5 shrink-0">
       <Link
         href="/dashboard"
         prefetch={false}
         onClick={handleBrandClick}
-        className={cn(
-          "flex items-center gap-2.5 transition-opacity hover:opacity-85 cursor-pointer",
-          isNavigating && "opacity-70"
-        )}
+        className="flex items-center gap-3 text-left group cursor-pointer"
       >
-        <div className="flex h-9 w-9 items-center justify-center">
-          {isNavigating ? <Loader2 size={24} className="animate-spin text-primary" /> : <TafLogo size={36} />}
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-card border border-border shadow-xs transition-transform group-hover:scale-105 shrink-0">
+          {activeIsNavigating ? (
+            <Loader2 size={24} className="animate-spin text-primary" />
+          ) : (
+            <TafLogo size={32} />
+          )}
         </div>
-        <div>
-          <p className="text-sm font-semibold leading-tight text-foreground">TAF Energies</p>
-          <p className="text-xs text-muted-foreground">Doc Tracker</p>
+        <div className="min-w-0">
+          <p className="font-semibold text-foreground text-sm tracking-tight truncate leading-tight group-hover:text-primary transition-colors">
+            TAF Energies
+          </p>
+          <p className="text-xs text-muted-foreground tracking-wide uppercase font-mono">
+            Doc Tracker
+          </p>
         </div>
       </Link>
+
       {onClose && (
-        <button onClick={onClose} className="text-muted-foreground hover:text-foreground md:hidden" aria-label="Close menu">
-          <X size={20} />
+        <button
+          onClick={onClose}
+          className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground md:hidden"
+          aria-label="Close menu"
+        >
+          <X size={18} />
         </button>
       )}
     </div>
   );
 }
 
-// Desktop: fixed sidebar, always visible at md+.
-export function Sidebar({ role, unreadCount = 0 }: { role: string; unreadCount?: number }) {
+export function Sidebar({
+  role,
+  unreadCount,
+}: {
+  role: string;
+  unreadCount: number;
+}) {
   return (
-    <aside className="hidden w-64 flex-col border-r border-border bg-card md:flex sticky top-0 h-screen overflow-hidden shrink-0">
+    <aside className="hidden md:flex md:w-60 md:flex-col border-r border-border bg-card shrink-0 h-screen sticky top-0">
       <BrandHeader />
       <NavLinks role={role} />
       <SidebarFooter unreadCount={unreadCount} />
@@ -268,15 +279,14 @@ export function Sidebar({ role, unreadCount = 0 }: { role: string; unreadCount?:
   );
 }
 
-// Mobile: slide-over drawer triggered by the Topbar's menu button.
 export function MobileSidebar({
   role,
-  unreadCount = 0,
+  unreadCount,
   open,
   onClose,
 }: {
   role: string;
-  unreadCount?: number;
+  unreadCount: number;
   open: boolean;
   onClose: () => void;
 }) {
@@ -284,7 +294,9 @@ export function MobileSidebar({
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [open]);
 
   // Close automatically on route change
@@ -292,14 +304,14 @@ export function MobileSidebar({
     if (open) {
       onClose();
     }
-  }, [pathname]);
+  }, [pathname, open, onClose]);
 
   if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 md:hidden">
-      <div 
-        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity" 
+      <div
+        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
         onClick={onClose}
         aria-hidden="true"
       />

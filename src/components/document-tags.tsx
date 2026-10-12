@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Tag, Plus, X, CheckCircle2, AlertCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Loader2, Tag, X } from "lucide-react";
 
 type Tag = {
   id: string;
@@ -35,37 +34,7 @@ export function DocumentTags({ documentId, initialTags = [] }: DocumentTagsProps
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchTags = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const res = await fetch(`/api/documents/${documentId}/tags`);
-      if (!res.ok) throw new Error("Failed to fetch document tags");
-      const data = await res.json();
-      setTags(data.documentTags || []);
-    } catch (err) {
-      setError("Failed to load document tags");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const fetchAvailableTags = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const res = await fetch(`/api/tags`);
-      if (!res.ok) throw new Error("Failed to fetch available tags");
-      const data = await res.json();
-      setAvailableTags(data.tags || []);
-    } catch (err) {
-      setError("Failed to load available tags");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const addTag = async () => {
     if (!selectedTagId) return;
@@ -120,10 +89,47 @@ export function DocumentTags({ documentId, initialTags = [] }: DocumentTagsProps
     }
   };
 
+  const refreshData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [docTagsData, allTagsData] = await Promise.all([
+        fetch(`/api/documents/${documentId}/tags`).then((r) => (r.ok ? r.json() : { documentTags: [] })),
+        fetch(`/api/tags`).then((r) => (r.ok ? r.json() : { tags: [] })),
+      ]);
+      setTags(docTagsData.documentTags || []);
+      setAvailableTags(allTagsData.tags || []);
+    } catch (err) {
+      setError("Failed to refresh tags");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Fetch initial data
   useEffect(() => {
-    fetchTags();
-    fetchAvailableTags();
+    let cancelled = false;
+    Promise.all([
+      fetch(`/api/documents/${documentId}/tags`).then((r) => (r.ok ? r.json() : { documentTags: [] })),
+      fetch(`/api/tags`).then((r) => (r.ok ? r.json() : { tags: [] })),
+    ])
+      .then(([docTagsData, allTagsData]) => {
+        if (!cancelled) {
+          setTags(docTagsData.documentTags || []);
+          setAvailableTags(allTagsData.tags || []);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError("Failed to load document tags");
+          console.error(err);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [documentId]);
 
   return (
@@ -137,12 +143,9 @@ export function DocumentTags({ documentId, initialTags = [] }: DocumentTagsProps
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => {
-              fetchTags();
-              fetchAvailableTags();
-            }}
+            onClick={refreshData}
           >
-            <Loader2 className="h-3 w-3 mr-1" /> Refresh
+            <Loader2 className={`h-3 w-3 mr-1 ${loading ? "animate-spin" : ""}`} /> Refresh
           </Button>
         </div>
 

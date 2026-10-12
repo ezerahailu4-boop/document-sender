@@ -72,24 +72,30 @@ export function RegisterForm({
   const nonGmDepartments = departments.filter((d) => !d.isGmOffice);
 
   useEffect(() => {
-    if (routeMode !== "department" || !targetDeptId) {
-      setDeptUsers([]);
-      setTargetUserId("");
-      return;
-    }
-    setLoadingUsers(true);
+    if (routeMode !== "department" || !targetDeptId) return;
+
+    let cancelled = false;
     fetch(`/api/departments/${targetDeptId}/users`)
       .then((r) => r.json())
-      .then((data) => setDeptUsers(data.users ?? []))
-      .finally(() => setLoadingUsers(false));
-    setTargetUserId("");
+      .then((data) => {
+        if (!cancelled) setDeptUsers(data.users ?? []);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoadingUsers(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [routeMode, targetDeptId]);
 
   useEffect(() => {
     if (routeMode === "person" && routableUsers.length === 0) {
       fetch("/api/users/routable")
         .then((r) => r.json())
-        .then((data) => setRoutableUsers(data.users ?? []));
+        .then((data) => setRoutableUsers(data.users ?? []))
+        .catch(() => {});
     }
   }, [routeMode, routableUsers.length]);
 
@@ -299,7 +305,17 @@ export function RegisterForm({
           <div className="space-y-3 rounded-md border border-border bg-background p-3">
             <div>
               <Label htmlFor="targetDept">Department *</Label>
-              <Select id="targetDept" value={targetDeptId} onChange={(e) => setTargetDeptId(e.target.value)} required>
+              <Select
+                id="targetDept"
+                value={targetDeptId}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setTargetDeptId(val);
+                  setTargetUserId("");
+                  if (val) setLoadingUsers(true);
+                }}
+                required
+              >
                 <option value="">Select department…</option>
                 {nonGmDepartments.map((d) => (
                   <option key={d.id} value={d.id}>{d.name}</option>

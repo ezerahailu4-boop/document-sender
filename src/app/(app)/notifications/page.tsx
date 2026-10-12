@@ -8,6 +8,13 @@ export default async function NotificationsPage() {
   const user = await getCurrentUser();
   const notifications = await prisma.notification.findMany({
     where: { userId: user.id, channel: "IN_APP" },
+    include: {
+      route: {
+        select: {
+          documentId: true,
+        },
+      },
+    },
     orderBy: { createdAt: "desc" },
     take: 50,
   });
@@ -26,6 +33,7 @@ export default async function NotificationsPage() {
               body: n.body,
               createdAt: n.createdAt.toISOString(),
               readAt: n.readAt ? n.readAt.toISOString() : null,
+              documentId: n.route?.documentId ?? null,
             }))}
             hasUnread={hasUnread}
           />

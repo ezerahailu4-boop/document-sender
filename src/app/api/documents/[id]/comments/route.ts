@@ -91,7 +91,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   // Check if user has access to this document
   const document = await prisma.document.findUnique({
     where: { id: documentId },
-    select: { id: true }
+    select: { id: true, referenceNumber: true, subject: true }
   });
 
   if (!document) {
@@ -115,8 +115,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     include: { author: { select: { id: true, fullName: true, email: true } } }
   });
 
-  // Process mentions in the content
-  await processMentions(comment.id, content.trim(), me.id);
+  // Process mentions in the content and dispatch notifications
+  await processMentions(
+    comment.id,
+    content.trim(),
+    me.id,
+    me.fullName,
+    document.id,
+    document.referenceNumber,
+    document.subject,
+    routeId || null
+  );
 
   // Fetch the comment with reactions and mentions for response
   const commentWithRelations = await prisma.comment.findUnique({
@@ -154,7 +163,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }, { status: 201 });
 }
 
-async function processMentions(commentId: string, content: string, authorId: string) {
+async function processMentions(
+  commentId: string,
+  content: string,
+  authorId: string,
+  authorName: string,
+  documentId: string,
+  referenceNumber: string,
+  subject: string,
+  routeId: string | null
+) {
   // Extract @mentions from content
   const mentionRegex = /@(\w+)/g;
   const matches = [...content.matchAll(mentionRegex)];
@@ -168,37 +186,42 @@ async function processMentions(commentId: string, content: string, authorId: str
   const limitedMentions = mentionedUsernames.slice(0, 5);
 
   const mentionPromises = limitedMentions.map(async (username) => {
-    // Try to find a user by:
-    // 1. Exact match on email prefix (username@domain)
-    // 2. Exact match on username part of email (before @)
-    // 3. Full name containing the mention
     const user = await prisma.user.findFirst({
       where: {
         OR: [
           { email: { startsWith: `${username}@`, mode: "insensitive" } },
-          {
-            email: {
-              // This is a simplified approach - in practice, you'd want to split the email at @ and compare the first part
-              // For now, we'll use an approximation that works for common cases
-              contains: `${username}@`,
-              mode: "insensitive"
-            }
-          },
+          { email: { contains: `${username}@`, mode: "insensitive" } },
           { fullName: { contains: username, mode: "insensitive" } }
         ]
       }
     });
 
     if (user && user.id !== authorId) {
-      return prisma.commentMention.create({
+      await prisma.commentMention.create({
         data: {
           commentId,
           userId: user.id
+        }
+      });
+
+      // Dispatch in-app notification to mentioned user
+      const title = `Mentioned on ${referenceNumber}`;
+      const snippet = content.length > 80 ? `${content.slice(0, 80)}…` : content;
+      const body = `${authorName} mentioned you on "${subject}": "${snippet}"`;
+
+      await prisma.notification.create({
+        data: {
+          userId: user.id,
+          channel: "IN_APP",
+          status: "SENT",
+          title,
+          body,
+          routeId: routeId ?? undefined,
         }
       });
     }
     return null;
   });
 
-  await Promise.all(mentionPromises.filter(Boolean));
+  await Promise.all(mentionPromises);
 }

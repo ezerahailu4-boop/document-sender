@@ -2,7 +2,6 @@ import { getCurrentUser } from "../actions";
 import { Topbar } from "@/components/layout/topbar";
 import { ROLE_LABELS, ROUTE_STATUS_CONFIG, daysOpen, isOverdue, SLA_DAYS } from "@/lib/status";
 import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
 import { RefNumber } from "@/components/ui/ref-number";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { InboxRowActions } from "./inbox-row-actions";

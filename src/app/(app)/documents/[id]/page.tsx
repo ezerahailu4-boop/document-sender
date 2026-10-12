@@ -7,12 +7,14 @@ import { RefNumber } from "@/components/ui/ref-number";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { ViewFileButton } from "./view-file-button";
 import { EditDocumentPanel } from "./edit-document-panel";
+import { DocumentTabs } from "./document-tabs";
+import { DocumentViewer } from "@/components/document-viewer";
 import { CommentThread } from "@/components/comment-thread";
 import { DocumentVersionHistory } from "@/components/document-version-history";
 import { CustomFieldsEditor } from "@/components/custom-fields-editor";
 import { DocumentTags } from "@/components/document-tags";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, FileText, Mail, RefreshCw, Info, MapPin, User as UserIcon, Clock, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, User as UserIcon, Clock, CheckCircle2, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 
 export default async function DocumentDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -32,29 +34,28 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
           toDept: true,
           fromDept: true,
           assignedUser: true,
-          actions: true
-        }
+          actions: true,
+        },
       },
-      auditEvents: { orderBy: { createdAt: "asc" } },
-      // Include related data for new features
+      auditEvents: { orderBy: { createdAt: "desc" } },
       comments: {
-        where: { routeId: null }, // Only top-level comments for now
+        where: { routeId: null },
         orderBy: { createdAt: "desc" },
-        take: 5,
-        include: { author: { select: { id: true, fullName: true, email: true } } }
+        include: { author: { select: { id: true, fullName: true, email: true } } },
       },
       versions: {
         orderBy: { versionNum: "desc" },
-        take: 5,
-        include: { createdBy: { select: { id: true, fullName: true, email: true } } }
+        include: { createdBy: { select: { id: true, fullName: true, email: true } } },
       },
       customValues: {
-        include: { customField: { select: { id: true, name: true, fieldType: true, options: true } } }
+        include: { customField: { select: { id: true, name: true, fieldType: true, options: true } } },
       },
       tags: {
-        include: { tag: { select: { id: true, name: true, color: true } },
-                 appliedBy: { select: { id: true, fullName: true } } }
-      }
+        include: {
+          tag: { select: { id: true, name: true, color: true } },
+          appliedBy: { select: { id: true, fullName: true } },
+        },
+      },
     },
   });
 
@@ -70,6 +71,158 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
 
   const cfg = DOCUMENT_STATUS_CONFIG[document.status];
 
+  // Document Preview Tab content
+  const documentTab = (
+    <div className="space-y-4">
+      <DocumentViewer
+        documentId={document.id}
+        subject={document.subject}
+        mimeType={document.mimeType}
+      />
+    </div>
+  );
+
+  // Routing Journey Tab content
+  const routingTab = (
+    <div className="rounded-lg border border-border bg-card p-5 shadow-sm space-y-4">
+      <h3 className="text-base font-semibold text-foreground">Routing Journey & Current Location</h3>
+      <div className="space-y-3">
+        {document.routes.map((route) => {
+          const rCfg = ROUTE_STATUS_CONFIG[route.status];
+          const isCurrent = route.status === "PENDING" || route.status === "OPENED";
+
+          return (
+            <div
+              key={route.id}
+              className={`rounded-lg border p-4 transition-all ${
+                isCurrent ? "border-primary/40 bg-accent/30 shadow-xs" : "border-border bg-background/50"
+              }`}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex items-start gap-3 min-w-0">
+                  <span
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                      isCurrent
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary/15 text-secondary"
+                    }`}
+                  >
+                    {route.sequence}
+                  </span>
+
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 text-sm">
+                      <span className="text-muted-foreground">{route.fromDept?.name ?? "Registry"}</span>
+                      <ArrowRight size={14} className="text-muted-foreground shrink-0" />
+                      <span className="font-semibold text-foreground">
+                        {route.toDept?.name ?? route.assignedUser?.fullName ?? "Unassigned"}
+                      </span>
+                      {isCurrent && (
+                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary uppercase tracking-wide">
+                          Current Location
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <UserIcon className="h-3 w-3" />
+                        {route.assignedUser?.fullName ?? "Department Intake"}
+                      </span>
+                      <span>•</span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {format(new Date(route.receivedAt), "PPp")}
+                      </span>
+                    </div>
+
+                    {route.comments && (
+                      <p className="mt-2 text-xs text-foreground bg-muted/40 rounded p-2">
+                        <strong className="text-muted-foreground">Handover Note:</strong> {route.comments}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="shrink-0 self-start sm:self-center">
+                  <StatusBadge
+                    label={route.status}
+                    textClass={rCfg?.text}
+                    bgClass={rCfg?.bg}
+                  />
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  // Discussion Tab content
+  const discussionTab = (
+    <div className="space-y-4">
+      <CommentThread documentId={document.id} />
+    </div>
+  );
+
+  // Metadata & Tags Tab content
+  const metadataTab = (
+    <div className="space-y-4">
+      <CustomFieldsEditor documentId={document.id} />
+      <DocumentTags documentId={document.id} />
+    </div>
+  );
+
+  // Versions Tab content
+  const versionsTab = (
+    <div className="space-y-4">
+      <DocumentVersionHistory documentId={document.id} />
+    </div>
+  );
+
+  // Audit Trail Tab content
+  const auditTab = (
+    <div className="rounded-lg border border-border bg-card p-5 shadow-sm space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
+          <CheckCircle2 size={16} className="text-primary" /> Full Audit Trail & Compliance Log
+        </h3>
+        <span className="text-xs text-muted-foreground">
+          {document.auditEvents.length} recorded events
+        </span>
+      </div>
+
+      <div className="space-y-3">
+        {document.auditEvents.map((ev) => (
+          <div
+            key={ev.id}
+            className="flex items-start justify-between gap-3 border-b border-border pb-3 last:border-0 last:pb-0"
+          >
+            <div className="min-w-0 flex-1">
+              <p className="flex items-baseline gap-2 mb-0.5">
+                <span className="font-semibold text-xs text-foreground">{ev.actorName}</span>
+                <span className="text-[11px] text-muted-foreground">
+                  {format(new Date(ev.createdAt), "PPp")}
+                </span>
+              </p>
+              <p className="text-xs text-foreground">
+                <span className="font-medium text-primary uppercase font-mono tracking-wide text-[11px] mr-1.5">
+                  [{ev.event}]
+                </span>
+                {ev.detail || ev.event.replace(/_/g, " ").toLowerCase()}
+              </p>
+            </div>
+            <RefreshCw className="h-3 w-3 text-muted-foreground shrink-0 mt-1" />
+          </div>
+        ))}
+        {document.auditEvents.length === 0 && (
+          <p className="text-center py-8 text-xs text-muted-foreground">No audit events recorded.</p>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <>
       <Topbar
@@ -79,295 +232,77 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
         userRole={ROLE_LABELS[user.role]}
       />
       <main className="flex-1 overflow-y-auto p-4 md:p-6">
-        <div className="mx-auto max-w-4xl space-y-4">
+        <div className="mx-auto max-w-5xl space-y-5">
           <div className="flex items-center justify-between">
             <Link
               href="/dashboard"
               prefetch={false}
-              className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors group cursor-pointer"
+              className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors group cursor-pointer"
             >
-              <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-0.5" />
+              <ArrowLeft size={14} className="transition-transform group-hover:-translate-x-0.5" />
               <span>Back to Master Ledger</span>
             </Link>
+
+            {isRegistryOrAdmin && <EditDocumentPanel document={document} />}
           </div>
 
-          {/* Enhanced Document Header */}
-          <div className="border border-border rounded-lg bg-card p-6 shadow-sm">
-            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between lg:gap-6">
-              <div className="flex flex-col items-center lg:items-start lg:mb-0 lg:mb-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <RefNumber value={document.referenceNumber} className="text-3xl font-bold" />
-                  <div className="flex items-center gap-2">
-                    <StatusBadge label={cfg.label} textClass={cfg.text} bgClass={cfg.bg} />
-                    {/* Version badge */}
-                    <span className="ml-2 px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary/20 text-secondary">
-                      v{document.versions?.[0]?.versionNum || 1}
-                    </span>
-                  </div>
+          {/* Master Document Header Card */}
+          <div className="border border-border rounded-lg bg-card p-5 shadow-sm">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-border">
+              <div>
+                <div className="flex items-center gap-2.5 mb-1.5">
+                  <RefNumber value={document.referenceNumber} className="text-2xl font-bold" />
+                  <StatusBadge label={cfg.label} textClass={cfg.text} bgClass={cfg.bg} />
+                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-secondary/15 text-secondary">
+                    v{document.versions?.[0]?.versionNum || 1}
+                  </span>
                 </div>
-
-                {/* Document preview area */}
-                <div className="w-full max-w-xs lg:w-48 bg-gradient-to-t from-background to-muted/50 rounded-lg p-4">
-                  <div className="text-center">
-                    <div className="flex items-center justify-center mb-3">
-                      <FileText className="h-10 w-10 text-primary" />
-                    </div>
-                    <p className="font-medium text-foreground">{document.subject}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {document.senderName} • {format(new Date(document.receivedDate), "MMM d, yyyy")}
-                    </p>
-                    <div className="mt-3 flex justify-center">
-                      <ViewFileButton documentId={document.id} />
-                    </div>
-                  </div>
-                </div>
+                <h1 className="text-lg font-semibold text-foreground tracking-tight">{document.subject}</h1>
               </div>
 
-              <div className="w-full lg:w-3/4 space-y-4">
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
-                  <div>
-                    <h3 className="text-lg font-semibold text-muted-foreground mb-2">Basic Information</h3>
-                    <dl className="space-y-3">
-                      <div>
-                        <dt className="text-sm font-medium text-muted-foreground">Sender</dt>
-                        <dd className="text-base text-foreground truncate">{document.senderName}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm font-medium text-muted-foreground">Sender organization</dt>
-                        <dd className="text-base text-foreground">{document.senderOrg ?? "—"}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm font-medium text-muted-foreground">Received</dt>
-                        <dd className="text-base text-foreground">{format(new Date(document.receivedDate), "PPP")}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm font-medium text-muted-foreground">Registered by</dt>
-                        <dd className="text-base text-foreground">{document.registeredBy.fullName}</dd>
-                      </div>
-                    </dl>
-                  </div>
+              <div className="flex items-center gap-2">
+                <ViewFileButton documentId={document.id} />
+              </div>
+            </div>
 
-                  <div>
-                    <h3 className="text-lg font-semibold text-muted-foreground mb-2">Classification</h3>
-                    <div className="space-y-3">
-                      {/* Tags */}
-                      <div className="flex flex-wrap gap-2">
-                        {document.tags.map(tagLink => (
-                          <div key={tagLink.id} className="flex items-center gap-2 rounded-md border border-tag px-3 py-1.5 text-sm">
-                            {tagLink.tag.color && (
-                              <div className="h-3 w-3 rounded" style={{ backgroundColor: tagLink.tag.color }} />
-                            )}
-                            <span className="font-medium text-foreground">{tagLink.tag.name}</span>
-                          </div>
-                        ))}
-                        {document.tags.length === 0 && (
-                          <span className="text-xs text-muted-foreground italic">No tags</span>
-                        )}
-                      </div>
-
-                      {/* Custom Fields */}
-                      <div className="mt-4">
-                        <h4 className="text-sm font-medium text-muted-foreground mb-2">Custom Fields</h4>
-                        {document.customValues.length > 0 ? (
-                          <div className="space-y-2">
-                            {document.customValues.map(cv => (
-                              <div key={cv.id} className="flex items-baseline gap-3">
-                                <span className="font-medium text-foreground w-32">{cv.customField.name}:</span>
-                                <span className="text-base text-foreground">
-                                  {(() => {
-                                    try {
-                                      if (cv.customField.fieldType === "number") {
-                                        return parseFloat(cv.value || "0");
-                                      } else if (cv.customField.fieldType === "date") {
-                                        return cv.value ? new Date(cv.value).toLocaleDateString() : "—";
-                                      } else if (cv.customField.fieldType === "checkbox") {
-                                        const parsed = JSON.parse(cv.value || "[]");
-                                        return Array.isArray(parsed) ? parsed.join(", ") : String(parsed);
-                                      }
-                                      return cv.value || "—";
-                                    } catch {
-                                      return cv.value || "—";
-                                    }
-                                  })()}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-sm italic text-muted-foreground">No custom fields</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                <div className="col-span-2">
-                  <h3 className="text-lg font-semibold text-muted-foreground mb-2">Routing Info</h3>
-                  <div className="space-y-3">
-                    <p className="text-sm text-muted-foreground mb-2">Origin: {document.originDept.name}</p>
-                    {document.registeredById !== user.id && (
-                      <p className="text-sm text-muted-foreground mb-2">Registered by: {document.registeredBy.fullName}</p>
-                    )}
-                  </div>
-                </div>
+            {/* Quick Metadata Bar */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 text-xs">
+              <div>
+                <span className="text-muted-foreground block mb-0.5">Sender</span>
+                <span className="font-semibold text-foreground truncate block">
+                  {document.senderName}
+                  {document.senderOrg ? ` (${document.senderOrg})` : ""}
+                </span>
+              </div>
+              <div>
+                <span className="text-muted-foreground block mb-0.5">Date Received</span>
+                <span className="font-semibold text-foreground">
+                  {format(new Date(document.receivedDate), "PPP")}
+                </span>
+              </div>
+              <div>
+                <span className="text-muted-foreground block mb-0.5">Origin Department</span>
+                <span className="font-semibold text-foreground">{document.originDept.name}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground block mb-0.5">Intake Staff</span>
+                <span className="font-semibold text-foreground">{document.registeredBy.fullName}</span>
               </div>
             </div>
           </div>
-        </div>
 
-          {/* Tabs for different views */}
-          <div className="space-y-4">
-            {/* Document Content Tab */}
-            <section className="space-y-4">
-              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
-                <FileText className="h-4 w-4 text-primary" />
-                Document
-              </h2>
-              {/* In a real implementation, this would show the actual document preview */}
-              <div className="border border-border rounded-lg bg-card p-6 min-h-[300px]">
-                <div className="flex h-full items-center justify-center text-muted-foreground">
-                  Document preview would appear here
-                  {/* In reality, this would be an iframe, PDF viewer, or image viewer */}
-                </div>
-              </div>
-            </section>
-
-            {/* Discussion Tab */}
-            <section className="space-y-4">
-              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
-                <Mail className="h-4 w-4 text-primary" />
-                Discussion & Comments
-              </h2>
-              <CommentThread documentId={document.id} />
-            </section>
-
-            {/* Version History Tab */}
-            <section className="space-y-4">
-              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
-                <RefreshCw className="h-4 w-4 text-primary" />
-                Version History
-              </h2>
-              <DocumentVersionHistory documentId={document.id} />
-            </section>
-
-            {/* Metadata Tab */}
-            <section className="space-y-4">
-              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
-                <Info className="h-4 w-4 text-primary" />
-                Metadata
-              </h2>
-              <div className="space-y-4">
-                {/* Custom Fields Editor */}
-                <CustomFieldsEditor
-                  documentId={document.id}
-                />
-
-                {/* Tags Manager */}
-                <DocumentTags documentId={document.id} />
-              </div>
-            </section>
-
-            {/* Routing Journey Tab */}
-            <section className="space-y-4">
-              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
-                <MapPin className="h-4 w-4 text-primary" />
-                Routing Journey
-              </h2>
-              <div className="space-y-4">
-                {document.routes.map((route, index) => (
-                  <div key={route.id} className="border border-border rounded-lg p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-baseline gap-2 mb-2">
-                          <div className="flex items-center gap-2">
-                            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-secondary/15 text-xs font-semibold text-secondary">
-                              {route.sequence}
-                            </span>
-                            <div className="flex flex-1 flex-wrap items-center gap-2 text-sm sm:flex-1">
-                              <span className="text-muted-foreground">{route.fromDept?.name ?? "Registry"}</span>
-                              <ArrowRight size={14} className="text-muted-foreground" />
-                              <span className="font-medium text-foreground">
-                                {route.toDept?.name ?? route.assignedUser?.fullName ?? "Unassigned"}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex items-baseline gap-3 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                              <UserIcon className="h-3 w-3 mr-1" />
-                              <span>{route.assignedUser?.fullName ?? "System"}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Clock className="h-3 w-3 mr-1" />
-                              <span>{new Date(route.receivedAt).toLocaleString()}</span>
-                            </div>
-                            {document.fileSizeBytes ? (
-                              <>
-                                <span className="ml-2">•</span>
-                                <span className="ml-1 text-xs text-muted-foreground">
-                                  {(document.fileSizeBytes / 1024 / 1024).toFixed(2)} MB
-                                </span>
-                              </>
-                            ) : null}
-                          </div>
-                        </div>
-                        {route.comments && (
-                          <p className="mt-2 text-sm text-muted-foreground">
-                            <strong>Comments:</strong> {route.comments}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="ml-4 flex items-center">
-                      <StatusBadge
-                        label={route.status}
-                        textClass={ROUTE_STATUS_CONFIG[route.status]?.text}
-                        bgClass={ROUTE_STATUS_CONFIG[route.status]?.bg}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* Audit Trail Tab */}
-            <section className="space-y-4">
-              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
-                <CheckCircle2 className="h-4 w-4 text-primary" />
-                Audit Trail
-              </h2>
-              <div className="max-h-[300px] overflow-y-auto border border-border rounded-lg p-4">
-                {document.auditEvents.length > 0 ? (
-                  <div className="space-y-3">
-                    {document.auditEvents.map((ev) => (
-                      <div key={ev.id} className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <p className="flex items-baseline gap-2 mb-1">
-                            <span className="font-medium text-foreground">{ev.actorName}</span>
-                            <span className="text-xs text-muted-foreground">{format(new Date(ev.createdAt), "PPp")}</span>
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {ev.event.replace(/_/g, " ").toLowerCase()}
-                            {ev.detail && <span className="ml-2">{ev.detail}</span>}
-                          </p>
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          <RefreshCw className="h-2 w-2" />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-center py-8 text-sm text-muted-foreground">No audit events recorded.</p>
-                )}
-              </div>
-            </section>
-          </div>
-
-          {/* Action Buttons */}
-          {isRegistryOrAdmin && (
-            <div className="mt-6">
-              <EditDocumentPanel document={document} />
-            </div>
-          )}
+          {/* Tabbed Workspace */}
+          <DocumentTabs
+            documentTab={documentTab}
+            routingTab={routingTab}
+            discussionTab={discussionTab}
+            metadataTab={metadataTab}
+            versionsTab={versionsTab}
+            auditTab={auditTab}
+            commentsCount={document.comments.length}
+            versionsCount={document.versions.length || 1}
+            routesCount={document.routes.length}
+          />
         </div>
       </main>
     </>

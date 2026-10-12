@@ -42,7 +42,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const documents = await prisma.document.findMany({
     where: {
-      referenceNumber: { contains: q, mode: "insensitive" },
+      OR: [
+        { referenceNumber: { contains: q, mode: "insensitive" } },
+        { subject: { contains: q, mode: "insensitive" } },
+        { senderName: { contains: q, mode: "insensitive" } },
+        { senderOrg: { contains: q, mode: "insensitive" } },
+        { tags: { some: { tag: { name: { contains: q, mode: "insensitive" } } } } },
+      ],
       // Non-Registry/Admin users only ever find documents that have passed
       // through their own department, OR were assigned directly to them
       // with no department at all — never the full ledger.

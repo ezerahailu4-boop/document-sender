@@ -3,17 +3,25 @@
 import { useState, useEffect, createContext, useContext } from "react";
 import { Sidebar, MobileSidebar } from "./sidebar";
 
-const MobileNavContext = createContext<{ open: () => void } | null>(null);
+interface AppShellContextType {
+  open: () => void;
+  unreadCount: number;
+}
+
+const AppShellContext = createContext<AppShellContextType | null>(null);
 
 export function useMobileNav() {
-  const ctx = useContext(MobileNavContext);
+  const ctx = useContext(AppShellContext);
   if (!ctx) throw new Error("useMobileNav must be used within AppShell");
   return ctx;
 }
 
-// Notified components (e.g. the notifications page, after marking things
-// read) can call this to force an immediate badge refresh instead of
-// waiting for the next poll tick.
+export function useAppShell() {
+  const ctx = useContext(AppShellContext);
+  if (!ctx) throw new Error("useAppShell must be used within AppShell");
+  return ctx;
+}
+
 const listeners = new Set<() => void>();
 export function refreshUnreadCount() {
   listeners.forEach((fn) => fn());
@@ -43,8 +51,7 @@ export function AppShell({
         const data = await res.json();
         if (!cancelled && typeof data.count === "number") setUnreadCount(data.count);
       } catch {
-        // Silent — a failed poll just means the badge stays at its last
-        // known value until the next successful tick.
+        // Silent poll
       }
     }
 
@@ -59,12 +66,17 @@ export function AppShell({
   }, []);
 
   return (
-    <MobileNavContext.Provider value={{ open: () => setMobileOpen(true) }}>
+    <AppShellContext.Provider value={{ open: () => setMobileOpen(true), unreadCount }}>
       <div className="flex min-h-screen bg-background">
         <Sidebar role={role} unreadCount={unreadCount} />
-        <MobileSidebar role={role} unreadCount={unreadCount} open={mobileOpen} onClose={() => setMobileOpen(false)} />
+        <MobileSidebar
+          role={role}
+          unreadCount={unreadCount}
+          open={mobileOpen}
+          onClose={() => setMobileOpen(false)}
+        />
         <div className="flex flex-1 flex-col">{children}</div>
       </div>
-    </MobileNavContext.Provider>
+    </AppShellContext.Provider>
   );
 }

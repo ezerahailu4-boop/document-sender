@@ -11,7 +11,7 @@ export async function trackAnalyticsEvent(
   eventType: string,
   documentId: string | null = null,
   userId: string | null = null,
-  eventData: Record<string, any> | null = null
+  eventData: Record<string, unknown> | null = null
 ) {
   try {
     await prisma.analyticsEvent.create({

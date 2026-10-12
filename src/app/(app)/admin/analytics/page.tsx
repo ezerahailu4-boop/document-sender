@@ -2,14 +2,19 @@ import { getCurrentUser } from "../../actions";
 import { Topbar } from "@/components/layout/topbar";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { format } from "date-fns";
 import { RefNumber } from "@/components/ui/ref-number";
 import { RefreshCw, Share2, FileText, Activity } from "lucide-react";
 
+function getSevenDaysAgo() {
+  return new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+}
+
 export default async function AdminAnalyticsPage() {
   const user = await getCurrentUser();
   if (user.role !== "ADMIN") redirect("/dashboard");
+
+  const sevenDaysAgo = getSevenDaysAgo();
 
   const [docStats, routeStats, userStats, recentEvents] = await Promise.all([
     // Document statistics
@@ -31,7 +36,7 @@ export default async function AdminAnalyticsPage() {
     prisma.analyticsEvent.findMany({
       where: {
         timestamp: {
-          gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+          gte: sevenDaysAgo,
         },
       },
       orderBy: { timestamp: "desc" },

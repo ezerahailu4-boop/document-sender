@@ -1,34 +1,40 @@
 import { getCurrentUser } from "../actions";
 import { Topbar } from "@/components/layout/topbar";
-import { ROLE_LABELS, DOCUMENT_STATUS_CONFIG, daysOpen, isOverdue, SLA_DAYS } from "@/lib/status";
+import { ROLE_LABELS, isOverdue, SLA_DAYS } from "@/lib/status";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import { RefNumber } from "@/components/ui/ref-number";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { SearchBar } from "./search-bar";
 import { ArchiveToggle } from "./archive-toggle";
-import { DocumentRowActions } from "./document-row-actions";
+import { LedgerTable } from "./ledger-table";
 import Link from "next/link";
 import { FileStack, Clock, CheckCircle2, Inbox, AlertTriangle, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Prisma } from "@prisma/client";
+import type { Prisma, DocumentStatus } from "@prisma/client";
 
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; page?: string; archived?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; archived?: string; status?: string; dept?: string }>;
 }) {
   const user = await getCurrentUser();
   if (user.role !== "REGISTRY_STAFF" && user.role !== "ADMIN") redirect("/inbox");
 
-  const { q, page: pageParam, archived } = await searchParams;
+  const { q, page: pageParam, archived, status: statusParam, dept: deptParam } = await searchParams;
   const query = (q ?? "").trim();
-  const showArchived = archived === "1";
+  const showArchived = archived === "1" || statusParam === "ARCHIVED";
   const page = Math.max(1, Number(pageParam) || 1);
   const PAGE_SIZE = 25;
 
+  const statusFilter = statusParam && statusParam !== "ALL" ? (statusParam as DocumentStatus) : undefined;
+  const deptFilter = deptParam && deptParam !== "ALL" ? deptParam : undefined;
+
   const where: Prisma.DocumentWhereInput = {
-    ...(showArchived ? {} : { status: { not: "ARCHIVED" } }),
+    ...(statusFilter
+      ? { status: statusFilter }
+      : showArchived
+      ? {}
+      : { status: { not: "ARCHIVED" } }),
+    ...(deptFilter ? { routes: { some: { toDeptId: deptFilter } } } : {}),
     ...(query
       ? {
           OR: [
@@ -41,7 +47,7 @@ export default async function DashboardPage({
       : {}),
   };
 
-  const [documents, totalCount, counts] = await Promise.all([
+  const [documents, totalCount, counts, departments, tags] = await Promise.all([
     prisma.document.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -57,6 +63,8 @@ export default async function DashboardPage({
     }),
     prisma.document.count({ where }),
     prisma.document.groupBy({ by: ["status"], _count: { status: true } }),
+    prisma.department.findMany({ orderBy: { name: "asc" } }),
+    prisma.tag.findMany({ orderBy: { name: "asc" } }),
   ]);
 
   const countFor = (s: string) => counts.find((c) => c.status === s)?._count.status ?? 0;
@@ -80,22 +88,44 @@ export default async function DashboardPage({
   const exportParams = new URLSearchParams({
     ...(query ? { q: query } : {}),
     ...(showArchived ? { archived: "1" } : {}),
+    ...(statusFilter ? { status: statusFilter } : {}),
+    ...(deptFilter ? { dept: deptFilter } : {}),
   });
 
   function pageHref(p: number) {
     const params = new URLSearchParams({
       ...(query ? { q: query } : {}),
       ...(showArchived ? { archived: "1" } : {}),
+      ...(statusFilter ? { status: statusFilter } : {}),
+      ...(deptFilter ? { dept: deptFilter } : {}),
       page: String(p),
     });
     return `/dashboard?${params.toString()}`;
   }
 
+  const tableDocuments = documents.map((doc) => {
+    const currentRoute = doc.routes[0];
+    const currentDeptName = currentRoute?.toDept?.name ?? currentRoute?.assignedUser?.fullName ?? "—";
+    const overdue = currentRoute ? isOverdue(currentRoute.receivedAt, currentRoute.status) : false;
+    return {
+      id: doc.id,
+      referenceNumber: doc.referenceNumber,
+      senderName: doc.senderName,
+      senderOrg: doc.senderOrg,
+      subject: doc.subject,
+      receivedDate: doc.receivedDate.toISOString(),
+      completedAt: doc.completedAt ? doc.completedAt.toISOString() : null,
+      status: doc.status,
+      currentDept: currentDeptName,
+      isOverdue: overdue,
+    };
+  });
+
   return (
     <>
       <Topbar
         title="Master Ledger"
-        subtitle="Real-time location and status of every registered document"
+        subtitle="Real-time location, bulk operations, and audit tracking across all documents"
         userName={user.fullName}
         userRole={ROLE_LABELS[user.role]}
       />
@@ -110,10 +140,12 @@ export default async function DashboardPage({
               <p className="text-2xl font-semibold text-foreground">{s.value}</p>
             </div>
           ))}
-          <div className={cn(
-            "rounded-lg border p-4 shadow-sm",
-            overdueCount > 0 ? "border-destructive/30 bg-destructive/10" : "border-border bg-card"
-          )}>
+          <div
+            className={cn(
+              "rounded-lg border p-4 shadow-sm",
+              overdueCount > 0 ? "border-destructive/30 bg-destructive/10" : "border-border bg-card"
+            )}
+          >
             <div className="mb-2 flex items-center justify-between">
               <p className={cn("text-sm", overdueCount > 0 ? "text-destructive" : "text-muted-foreground")}>
                 Overdue ({SLA_DAYS}+ days)
@@ -139,64 +171,18 @@ export default async function DashboardPage({
           </div>
         </div>
 
-        <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-sm">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-background text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <th className="px-4 py-3 font-medium">Reference No.</th>
-                <th className="px-4 py-3 font-medium">Sender</th>
-                <th className="px-4 py-3 font-medium">Subject</th>
-                <th className="px-4 py-3 font-medium">Currently At</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Days Open</th>
-                <th className="px-4 py-3 font-medium"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {documents.map((doc) => {
-                const cfg = DOCUMENT_STATUS_CONFIG[doc.status];
-                const currentRoute = doc.routes[0];
-                const currentDept = currentRoute?.toDept?.name ?? currentRoute?.assignedUser?.fullName ?? "—";
-                const overdue = currentRoute ? isOverdue(currentRoute.receivedAt, currentRoute.status) : false;
-                return (
-                  <tr key={doc.id} className={cn("border-b border-border last:border-0 hover:bg-background", overdue && "bg-destructive/5")}>
-                    <td className="px-4 py-3">
-                      <Link href={`/documents/${doc.id}`}>
-                        <RefNumber value={doc.referenceNumber} />
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3 text-foreground">{doc.senderName}</td>
-                    <td className="max-w-xs truncate px-4 py-3 text-muted-foreground">{doc.subject}</td>
-                    <td className="px-4 py-3 text-foreground">{currentDept}</td>
-                    <td className="px-4 py-3">
-                      <StatusBadge label={cfg.label} textClass={cfg.text} bgClass={cfg.bg} />
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={overdue ? "font-medium text-destructive" : "text-muted-foreground"}>
-                        {daysOpen(doc.receivedDate, doc.completedAt)} day(s)
-                        {overdue && " ⚠"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <DocumentRowActions documentId={doc.id} status={doc.status} />
-                    </td>
-                  </tr>
-                );
-              })}
-              {documents.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-muted-foreground">
-                    {query ? `No documents match "${query}".` : "No documents registered yet."}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <LedgerTable
+          documents={tableDocuments}
+          departments={departments}
+          tags={tags}
+          totalCount={totalCount}
+        />
 
         {totalPages > 1 && (
           <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
-            <p>Page {page} of {totalPages} ({totalCount} document{totalCount === 1 ? "" : "s"})</p>
+            <p>
+              Page {page} of {totalPages} ({totalCount} document{totalCount === 1 ? "" : "s"})
+            </p>
             <div className="flex gap-2">
               {page > 1 && (
                 <Link href={pageHref(page - 1)} className="rounded-md border border-border px-3 py-1.5 hover:bg-background">

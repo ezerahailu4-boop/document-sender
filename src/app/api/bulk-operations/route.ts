@@ -4,7 +4,9 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
-  const { data: { user: authUser } } = await supabase.auth.getUser();
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
 
   if (!authUser) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -15,44 +17,158 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No profile found" }, { status: 403 });
   }
 
-  // Only allow admins to perform bulk operations
-  if (me.role !== "ADMIN") {
+  // Allow ADMIN and REGISTRY_STAFF
+  if (me.role !== "ADMIN" && me.role !== "REGISTRY_STAFF") {
     return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
   }
 
-  const { operationType, documentIds, parameters } = await req.json();
+  const { operationType, documentIds, parameters } = await req.json().catch(() => ({}));
 
-  if (!operationType || !documentIds || !Array.isArray(documentIds)) {
-    return NextResponse.json({ error: "Operation type and document IDs array are required" }, { status: 400 });
+  if (!operationType || !documentIds || !Array.isArray(documentIds) || documentIds.length === 0) {
+    return NextResponse.json(
+      { error: "Operation type and non-empty document IDs array are required" },
+      { status: 400 }
+    );
   }
 
-  // Create bulk operation record
+  // Create bulk operation log
   const bulkOperation = await prisma.bulkOperation.create({
     data: {
       operationType,
-      status: "pending",
+      status: "processing",
       initiatedById: me.id,
       itemCount: documentIds.length,
-      parameters: parameters ? typeof parameters === "string" ? parameters : JSON.stringify(parameters) : null
+      parameters: parameters
+        ? typeof parameters === "string"
+          ? parameters
+          : JSON.stringify(parameters)
+        : null,
+    },
+  });
+
+  let successCount = 0;
+  let failureCount = 0;
+  const errorLog: string[] = [];
+
+  try {
+    if (operationType === "archive") {
+      // Archive all specified documents
+      const docsToArchive = await prisma.document.findMany({
+        where: { id: { in: documentIds } },
+        select: { id: true, referenceNumber: true, status: true },
+      });
+
+      for (const doc of docsToArchive) {
+        try {
+          await prisma.document.update({
+            where: { id: doc.id },
+            data: { status: "ARCHIVED" },
+          });
+
+          await prisma.auditEvent.create({
+            data: {
+              documentId: doc.id,
+              actorName: me.fullName,
+              event: "ARCHIVED",
+              detail: `Bulk archived by ${me.fullName}`,
+            },
+          });
+          successCount++;
+        } catch (e) {
+          failureCount++;
+          errorLog.push(`Doc ${doc.referenceNumber}: ${e instanceof Error ? e.message : "Error"}`);
+        }
+      }
+    } else if (operationType === "restore") {
+      // Restore archived documents to COMPLETED
+      const docsToRestore = await prisma.document.findMany({
+        where: { id: { in: documentIds }, status: "ARCHIVED" },
+        select: { id: true, referenceNumber: true },
+      });
+
+      for (const doc of docsToRestore) {
+        try {
+          await prisma.document.update({
+            where: { id: doc.id },
+            data: { status: "COMPLETED" },
+          });
+
+          await prisma.auditEvent.create({
+            data: {
+              documentId: doc.id,
+              actorName: me.fullName,
+              event: "RESTORED",
+              detail: `Bulk restored by ${me.fullName}`,
+            },
+          });
+          successCount++;
+        } catch (e) {
+          failureCount++;
+          errorLog.push(`Doc ${doc.referenceNumber}: ${e instanceof Error ? e.message : "Error"}`);
+        }
+      }
+    } else if (operationType === "tag" && parameters?.tagId) {
+      // Apply tag to all selected documents
+      for (const docId of documentIds) {
+        try {
+          await prisma.documentTag.upsert({
+            where: {
+              documentId_tagId: {
+                documentId: docId,
+                tagId: parameters.tagId,
+              },
+            },
+            create: {
+              documentId: docId,
+              tagId: parameters.tagId,
+              appliedById: me.id,
+            },
+            update: {
+              appliedAt: new Date(),
+              appliedById: me.id,
+            },
+          });
+          successCount++;
+        } catch (e) {
+          failureCount++;
+          errorLog.push(`Doc ${docId}: ${e instanceof Error ? e.message : "Error"}`);
+        }
+      }
+    } else {
+      throw new Error(`Unsupported bulk operation: ${operationType}`);
     }
-  });
 
-  // In a real implementation, you would process the operation asynchronously
-  // For now, we'll just simulate completion
+    // Complete the bulk operation record
+    await prisma.bulkOperation.update({
+      where: { id: bulkOperation.id },
+      data: {
+        status: failureCount === 0 ? "completed" : "completed_with_errors",
+        completedAt: new Date(),
+        successCount,
+        failureCount,
+        errorLog: errorLog.length > 0 ? JSON.stringify(errorLog) : null,
+      },
+    });
 
-  // Update the bulk operation as completed
-  await prisma.bulkOperation.update({
-    where: { id: bulkOperation.id },
-    data: {
-      status: "completed",
-      completedAt: new Date(),
-      successCount: documentIds.length,
-      failureCount: 0
-    }
-  });
+    return NextResponse.json({
+      bulkOperationId: bulkOperation.id,
+      success: true,
+      successCount,
+      failureCount,
+    });
+  } catch (err) {
+    await prisma.bulkOperation.update({
+      where: { id: bulkOperation.id },
+      data: {
+        status: "failed",
+        completedAt: new Date(),
+        errorLog: JSON.stringify([err instanceof Error ? err.message : "Bulk operation failed"]),
+      },
+    });
 
-  return NextResponse.json({
-    bulkOperationId: bulkOperation.id,
-    success: true
-  });
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Bulk operation failed" },
+      { status: 500 }
+    );
+  }
 }

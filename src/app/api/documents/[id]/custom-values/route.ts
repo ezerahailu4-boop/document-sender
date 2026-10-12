@@ -40,7 +40,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   });
 
   const parsedValues = customValues.map(cv => {
-    let parsedValue: any = cv.value;
+    let parsedValue: unknown = cv.value;
     try {
       if (cv.customField.fieldType === "number") {
         parsedValue = cv.value !== null ? parseFloat(cv.value) : null;

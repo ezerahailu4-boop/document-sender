@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.redirect(data.properties.action_link);
-  } catch (err) {
+  } catch {
     return NextResponse.redirect(new URL('/login?error=invalid_token', request.url));
   }
 }

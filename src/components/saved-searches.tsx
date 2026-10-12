@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Trash2, Share2, CheckCircle2, X, Search } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Loader2, Trash2, Share2, CheckCircle2, Search } from "lucide-react";
 
 type SavedSearch = {
   id: string;
@@ -163,7 +162,28 @@ export function SavedSearches({ initialSearches = [] }: SavedSearchesProps) {
   };
 
   useEffect(() => {
-    fetchSearches();
+    let cancelled = false;
+    fetch(`/api/saved-searches`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch saved searches");
+        return res.json();
+      })
+      .then((data) => {
+        if (!cancelled) {
+          setSearches(data.savedSearches || []);
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError("Failed to load saved searches");
+          setLoading(false);
+          console.error(err);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (

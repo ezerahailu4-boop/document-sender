@@ -1,33 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { format } from "date-fns";
-import { Bell, Check } from "lucide-react";
+import { Bell, Check, ArrowRight, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { refreshUnreadCount } from "@/components/layout/app-shell";
 
-type Notification = {
+type NotificationItem = {
   id: string;
   title: string;
   body: string;
   createdAt: string;
   readAt: string | null;
+  documentId?: string | null;
 };
 
 export function NotificationsList({
   initialNotifications,
   hasUnread,
 }: {
-  initialNotifications: Notification[];
+  initialNotifications: NotificationItem[];
   hasUnread: boolean;
 }) {
   const [notifications, setNotifications] = useState(initialNotifications);
 
-  // Mark everything read shortly after the page is actually viewed — a
-  // short delay so a person just glancing at the sidebar and clicking
-  // away doesn't lose the unread marker before they've actually read
-  // anything.
   useEffect(() => {
     if (!hasUnread) return;
     const timer = setTimeout(async () => {
@@ -36,14 +34,16 @@ export function NotificationsList({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ all: true }),
       });
-      setNotifications((prev) => prev.map((n) => ({ ...n, readAt: n.readAt ?? new Date().toISOString() })));
+      setNotifications((prev) =>
+        prev.map((n) => ({ ...n, readAt: n.readAt ?? new Date().toISOString() }))
+      );
       refreshUnreadCount();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, 1200);
     return () => clearTimeout(timer);
   }, [hasUnread]);
 
-  async function markOneRead(id: string) {
+  async function markOneRead(id: string, e?: React.MouseEvent) {
+    if (e) e.stopPropagation();
     await fetch("/api/notifications", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -53,6 +53,14 @@ export function NotificationsList({
       prev.map((n) => (n.id === id ? { ...n, readAt: new Date().toISOString() } : n))
     );
     refreshUnreadCount();
+  }
+
+  // Extract reference number from title or body (e.g., TAF/IN/2026/001)
+  function getDocLink(n: NotificationItem) {
+    if (n.documentId) return `/documents/${n.documentId}`;
+    const refMatch = (n.title + " " + n.body).match(/TAF\/[A-Z0-9\/_-]+/i);
+    if (refMatch) return `/find?query=${encodeURIComponent(refMatch[0])}`;
+    return "/inbox";
   }
 
   if (notifications.length === 0) {
@@ -65,27 +73,52 @@ export function NotificationsList({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2.5">
       {notifications.map((n) => {
         const unread = !n.readAt;
+        const linkHref = getDocLink(n);
+
         return (
           <div
             key={n.id}
             className={cn(
-              "flex items-start justify-between gap-3 rounded-lg border p-4 shadow-sm",
-              unread ? "border-primary/40 bg-accent" : "border-border bg-card"
+              "group relative flex items-start justify-between gap-3 rounded-lg border p-4 shadow-sm transition-all hover:border-primary/50",
+              unread ? "border-primary/40 bg-accent/40" : "border-border bg-card"
             )}
           >
-            <div className="min-w-0">
-              <div className="mb-0.5 flex items-center gap-2">
-                {unread && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />}
-                <p className="text-sm font-medium text-foreground">{n.title}</p>
+            <Link href={linkHref} className="min-w-0 flex-1 block">
+              <div className="mb-1 flex items-center gap-2">
+                {unread ? (
+                  <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />
+                ) : (
+                  <span className="h-2 w-2 shrink-0 rounded-full bg-muted-foreground/30" />
+                )}
+                <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                  {n.title}
+                </p>
+                <ArrowRight
+                  size={12}
+                  className="opacity-0 group-hover:opacity-100 text-primary transition-opacity"
+                />
               </div>
-              <p className="text-sm text-muted-foreground">{n.body}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{format(new Date(n.createdAt), "PPp")}</p>
-            </div>
+              <p className="text-xs text-muted-foreground line-clamp-2 pl-4">{n.body}</p>
+              <div className="mt-2 flex items-center gap-3 pl-4 text-[11px] text-muted-foreground">
+                <span>{format(new Date(n.createdAt), "PPp")}</span>
+                <span>•</span>
+                <span className="text-primary hover:underline inline-flex items-center gap-0.5">
+                  View Document <ExternalLink size={10} />
+                </span>
+              </div>
+            </Link>
+
             {unread && (
-              <Button size="sm" variant="ghost" onClick={() => markOneRead(n.id)} title="Mark as read">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => markOneRead(n.id, e)}
+                title="Mark as read"
+                className="h-8 w-8 p-0 shrink-0 text-muted-foreground hover:text-foreground"
+              >
                 <Check size={14} />
               </Button>
             )}
