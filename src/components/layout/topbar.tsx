@@ -23,8 +23,9 @@ export function Topbar({
     <header className="flex items-center justify-between border-b border-border bg-card px-4 py-4 md:px-6">
       <div className="flex items-center gap-3">
         <button
+          type="button"
           onClick={open}
-          className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground md:hidden"
+          className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground md:hidden cursor-pointer"
           aria-label="Open menu"
         >
           <Menu size={20} />

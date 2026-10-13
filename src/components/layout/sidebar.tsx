@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   LayoutDashboard,
   Inbox,
@@ -291,6 +291,7 @@ export function MobileSidebar({
   onClose: () => void;
 }) {
   const pathname = usePathname();
+  const prevPathname = useRef(pathname);
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
@@ -299,23 +300,34 @@ export function MobileSidebar({
     };
   }, [open]);
 
-  // Close automatically on route change
+  // Close automatically only when the route actually changes
   useEffect(() => {
-    if (open) {
+    if (prevPathname.current !== pathname) {
+      prevPathname.current = pathname;
       onClose();
     }
-  }, [pathname, open, onClose]);
+  }, [pathname, onClose]);
+
+  // Close on Escape key press
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, onClose]);
 
   if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 md:hidden">
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
         onClick={onClose}
         aria-hidden="true"
       />
-      <aside className="relative z-10 flex h-full w-[85vw] max-w-72 flex-col bg-card shadow-2xl overflow-hidden">
+      <aside className="relative z-10 flex h-full w-[85vw] max-w-72 flex-col bg-card shadow-2xl overflow-hidden animate-in slide-in-from-left duration-200">
         <BrandHeader onClose={onClose} />
         <NavLinks role={role} onNavigate={onClose} />
         <SidebarFooter unreadCount={unreadCount} onNavigate={onClose} />
