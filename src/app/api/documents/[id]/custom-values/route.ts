@@ -14,7 +14,7 @@ async function checkAccess(documentId: string, authUserId: string) {
 
   const isRegistryOrAdmin = me.role === "REGISTRY_STAFF" || me.role === "ADMIN";
   const hasRouteAccess = document.routes.some(
-    (r) => r.toDeptId === me.departmentId || (!r.toDeptId && r.assignedUserId === me.id)
+    (r) => r.assignedUserId === me.id || (r.toDeptId && r.toDeptId === me.departmentId)
   );
 
   return { me, allowed: isRegistryOrAdmin || hasRouteAccess, document };

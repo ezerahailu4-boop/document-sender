@@ -31,7 +31,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   // document, the person it's personally assigned to (when there's no
   // department), or an Admin may forward it.
   const isDeptMember = currentRoute.toDeptId && me.departmentId === currentRoute.toDeptId;
-  const isPersonalAssignee = !currentRoute.toDeptId && currentRoute.assignedUserId === me.id;
+  const isPersonalAssignee = currentRoute.assignedUserId === me.id;
   if (me.role !== "ADMIN" && !isDeptMember && !isPersonalAssignee) {
     return NextResponse.json({ error: "This document is not in your inbox" }, { status: 403 });
   }

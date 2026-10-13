@@ -33,8 +33,8 @@ export async function GET(req: NextRequest) {
             routes: {
               some: {
                 OR: [
+                  { assignedUserId: me.id },
                   ...(me.departmentId ? [{ toDeptId: me.departmentId }] : []),
-                  { toDeptId: null, assignedUserId: me.id },
                 ],
               },
             },

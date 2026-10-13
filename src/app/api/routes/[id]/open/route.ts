@@ -16,7 +16,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!route) return NextResponse.json({ error: "Route not found" }, { status: 404 });
   if (me.role !== "ADMIN") {
     const isDeptMember = route.toDeptId && me.departmentId === route.toDeptId;
-    const isPersonalAssignee = !route.toDeptId && route.assignedUserId === me.id;
+    const isPersonalAssignee = route.assignedUserId === me.id;
     if (!isDeptMember && !isPersonalAssignee) {
       return NextResponse.json({ error: "This document is not in your inbox" }, { status: 403 });
     }

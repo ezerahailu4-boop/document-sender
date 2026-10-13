@@ -29,7 +29,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
   if (me.role !== "ADMIN") {
     const isDeptMember = currentRoute.toDeptId && me.departmentId === currentRoute.toDeptId;
-    const isPersonalAssignee = !currentRoute.toDeptId && currentRoute.assignedUserId === me.id;
+    const isPersonalAssignee = currentRoute.assignedUserId === me.id;
     if (!isDeptMember && !isPersonalAssignee) {
       return NextResponse.json({ error: "This document is not in your inbox" }, { status: 403 });
     }

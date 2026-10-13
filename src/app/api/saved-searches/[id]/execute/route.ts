@@ -58,8 +58,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
             routes: {
               some: {
                 OR: [
+                  { assignedUserId: me.id },
                   ...(me.departmentId ? [{ toDeptId: me.departmentId }] : []),
-                  { toDeptId: null, assignedUserId: me.id },
                 ],
               },
             },

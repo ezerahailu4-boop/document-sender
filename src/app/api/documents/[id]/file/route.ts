@@ -22,7 +22,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   // routing history (current or past hop) — never arbitrary documents.
   const isRegistryOrAdmin = me.role === "REGISTRY_STAFF" || me.role === "ADMIN";
   const hasRouteAccess = document.routes.some(
-    (r) => r.toDeptId === me.departmentId || (!r.toDeptId && r.assignedUserId === me.id)
+    (r) => r.assignedUserId === me.id || (r.toDeptId && r.toDeptId === me.departmentId)
   );
   if (!isRegistryOrAdmin && !hasRouteAccess) {
     return NextResponse.json({ error: "You don't have access to this document" }, { status: 403 });

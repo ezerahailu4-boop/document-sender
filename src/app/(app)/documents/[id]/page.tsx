@@ -13,6 +13,7 @@ import { CommentThread } from "@/components/comment-thread";
 import { DocumentVersionHistory } from "@/components/document-version-history";
 import { CustomFieldsEditor } from "@/components/custom-fields-editor";
 import { DocumentTags } from "@/components/document-tags";
+import { InboxRowActions } from "../../inbox/inbox-row-actions";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, User as UserIcon, Clock, CheckCircle2, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
@@ -65,9 +66,21 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
   const hasAccess =
     isRegistryOrAdmin ||
     document.routes.some(
-      (r) => r.toDeptId === user.departmentId || (!r.toDeptId && r.assignedUserId === user.id)
+      (r) => r.assignedUserId === user.id || (r.toDeptId && r.toDeptId === user.departmentId)
     );
   if (!hasAccess) redirect("/inbox");
+
+  const activeRouteForUser = document.routes.find(
+    (r) =>
+      (r.status === "PENDING" || r.status === "OPENED") &&
+      (user.role === "ADMIN" ||
+        r.assignedUserId === user.id ||
+        (r.toDeptId && r.toDeptId === user.departmentId))
+  );
+
+  const allDepartments = activeRouteForUser
+    ? await prisma.department.findMany({ orderBy: { name: "asc" } })
+    : [];
 
   const cfg = DOCUMENT_STATUS_CONFIG[document.status];
 
@@ -290,6 +303,34 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
               </div>
             </div>
           </div>
+
+          {activeRouteForUser && (
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 shadow-xs">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
+                <span className="text-xs font-semibold text-primary uppercase tracking-wide">
+                  Waiting For Your Action
+                </span>
+                {activeRouteForUser.assignedUserId === user.id && (
+                  <span className="rounded-full bg-primary/15 text-primary border border-primary/20 px-2 py-0.5 text-[10px] font-bold">
+                    Assigned Personally To You
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mb-1">
+                This document is currently at your station. You can forward it directly to another person or department, or mark it completed.
+              </p>
+              <InboxRowActions
+                routeId={activeRouteForUser.id}
+                documentId={document.id}
+                status={activeRouteForUser.status}
+                filePath={document.scannedFilePath}
+                departments={allDepartments.filter((d) => d.id !== user.departmentId)}
+                canReturn={!!activeRouteForUser.fromDeptId}
+                isGm={user.role === "GM"}
+              />
+            </div>
+          )}
 
           {/* Tabbed Workspace */}
           <DocumentTabs

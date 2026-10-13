@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { RefNumber } from "@/components/ui/ref-number";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { InboxRowActions } from "./inbox-row-actions";
-import { Inbox as InboxIcon, AlertTriangle } from "lucide-react";
+import { Inbox as InboxIcon, AlertTriangle, User as UserIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default async function InboxPage() {
@@ -22,11 +22,11 @@ export default async function InboxPage() {
     where: {
       status: { in: ["PENDING", "OPENED"] },
       OR: [
+        { assignedUserId: user.id },
         ...(user.departmentId ? [{ toDeptId: user.departmentId }] : []),
-        { toDeptId: null, assignedUserId: user.id },
       ],
     },
-    include: { document: true, fromDept: true },
+    include: { document: true, fromDept: true, assignedUser: true },
     orderBy: { receivedAt: "asc" },
   });
 
@@ -68,9 +68,22 @@ export default async function InboxPage() {
                 >
                   <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <div className="mb-1 flex items-center gap-2">
+                      <div className="mb-1 flex items-center gap-2 flex-wrap">
                         <RefNumber value={route.document.referenceNumber} />
                         <StatusBadge label={cfg.label} textClass={cfg.text} bgClass={cfg.bg} />
+                        {route.assignedUser && (
+                          <span
+                            className={cn(
+                              "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium border",
+                              route.assignedUser.id === user.id
+                                ? "bg-primary/10 text-primary border-primary/20 font-semibold"
+                                : "bg-muted text-muted-foreground border-border"
+                            )}
+                          >
+                            <UserIcon size={11} />
+                            {route.assignedUser.id === user.id ? "Assigned to you" : `Assigned: ${route.assignedUser.fullName}`}
+                          </span>
+                        )}
                         {overdue && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2.5 py-1 text-xs font-medium text-destructive">
                             <AlertTriangle size={12} /> Overdue
